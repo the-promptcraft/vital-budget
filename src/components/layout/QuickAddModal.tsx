@@ -44,6 +44,7 @@ export function QuickAddModal() {
   const [txAmount, setTxAmount] = useState("");
   const [txEnvelopeId, setTxEnvelopeId] = useState("env-food");
   const [txType, setTxType] = useState<"expense" | "income">("expense");
+  const [incomeMode, setIncomeMode] = useState<"salary" | "bonus">("salary");
 
   // Grocery state
   const [grName, setGrName] = useState("");
@@ -80,14 +81,21 @@ export function QuickAddModal() {
 
     if (mode === "tx") {
       const amount = parseFloat(txAmount);
-      if (!txLabel.trim() || isNaN(amount) || amount <= 0) return;
+      if (isNaN(amount) || amount <= 0) return;
+      const defaultLabel =
+        txType === "income"
+          ? incomeMode === "salary"
+            ? "Monthly Net Salary"
+            : "Extra Bonus / Income"
+          : "Expense";
 
       addTransaction({
-        label: txLabel.trim(),
+        label: txLabel.trim() || defaultLabel,
         amount,
         date: new Date().toISOString().split("T")[0],
         envelopeId: txType === "income" ? "income" : txEnvelopeId,
         type: txType,
+        replaceBaseSalary: txType === "income" && incomeMode === "salary",
       });
       setTxLabel("");
       setTxAmount("");
@@ -247,9 +255,42 @@ export function QuickAddModal() {
                           : "bg-[#2C2C2E] border-transparent text-zinc-400"
                       }`}
                     >
-                      Income / Bonus (+)
+                      Salary / Income (+)
                     </button>
                   </div>
+
+                  {txType === "income" && (
+                    <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#121214] border border-white/[0.06]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIncomeMode("salary");
+                          if (!txLabel) setTxLabel("Monthly Net Salary");
+                        }}
+                        className={`py-1.5 rounded-lg text-[11px] font-semibold transition ${
+                          incomeMode === "salary"
+                            ? "bg-[#2C2C2E] text-[#30D158]"
+                            : "text-zinc-400"
+                        }`}
+                      >
+                        Set Base Salary (Replaces)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIncomeMode("bonus");
+                          if (txLabel === "Monthly Net Salary") setTxLabel("");
+                        }}
+                        className={`py-1.5 rounded-lg text-[11px] font-semibold transition ${
+                          incomeMode === "bonus"
+                            ? "bg-[#2C2C2E] text-[#64D2FF]"
+                            : "text-zinc-400"
+                        }`}
+                      >
+                        Extra Bonus (+ Adds)
+                      </button>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-[11px] text-zinc-400 mb-1">
@@ -257,8 +298,11 @@ export function QuickAddModal() {
                     </label>
                     <input
                       type="text"
-                      required
-                      placeholder="e.g., Farmers Market, Bonus, Dinner Out..."
+                      placeholder={
+                        txType === "income"
+                          ? "Monthly Net Salary"
+                          : "e.g., Farmers Market, Dinner Out..."
+                      }
                       value={txLabel}
                       onChange={(e) => setTxLabel(e.target.value)}
                       className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#0A84FF]"

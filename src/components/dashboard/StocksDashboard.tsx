@@ -49,6 +49,7 @@ export function StocksDashboard() {
     addFixedExpense,
     deleteFixedExpense,
     updateEnvelopeAllocation,
+    updateEnvelopeSpent,
     deleteTransaction,
     updateBudgetTargets,
     startNewMonth,
@@ -63,9 +64,10 @@ export function StocksDashboard() {
   const [selectedNextMonth, setSelectedNextMonth] = useState("November 2026");
   const [bannerMsg, setBannerMsg] = useState<string | null>(null);
 
-  // Envelope allocation editing
+  // Envelope allocation & spent editing
   const [editingEnvId, setEditingEnvId] = useState<string | null>(null);
   const [envAllocInput, setEnvAllocInput] = useState("");
+  const [envSpentInput, setEnvSpentInput] = useState("");
 
   // Add new fixed bill state
   const [showAddFixed, setShowAddFixed] = useState(false);
@@ -219,8 +221,10 @@ export function StocksDashboard() {
 
   const handleSaveTargets = (e: React.FormEvent) => {
     e.preventDefault();
-    const inc = parseFloat(incomeInput) || monthlyIncome;
-    const sav = parseFloat(savingsInput) || savingsTarget;
+    const parsedInc = parseFloat(incomeInput);
+    const parsedSav = parseFloat(savingsInput);
+    const inc = !isNaN(parsedInc) ? Math.max(0, parsedInc) : monthlyIncome;
+    const sav = !isNaN(parsedSav) ? Math.max(0, parsedSav) : savingsTarget;
     updateBudgetTargets(inc, sav);
     setEditingTargets(false);
     showBanner("✅ Monthly Income & Savings Target updated!");
@@ -394,8 +398,30 @@ export function StocksDashboard() {
           </div>
         )}
 
-        {/* 3 Apple Stocks KPI Pills */}
-        <div className="grid grid-cols-3 gap-2.5 mt-4">
+        {/* 4 Apple Stocks KPI Pills */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4">
+          <div
+            onClick={() => {
+              setIncomeInput(String(monthlyIncome));
+              setSavingsInput(String(savingsTarget));
+              setEditingTargets(true);
+            }}
+            className="rounded-2xl bg-[#121214] border border-white/[0.06] p-3 cursor-pointer hover:border-[#0A84FF]/40 transition group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wider text-zinc-400 block">
+                Monthly Income
+              </span>
+              <Pencil className="w-2.5 h-2.5 text-zinc-500 group-hover:text-[#0A84FF] transition" />
+            </div>
+            <span className="text-base font-bold text-white tabular-nums mt-0.5 block">
+              {formatEUR(monthlyIncome)}
+            </span>
+            <span className="text-[10px] text-zinc-500 tabular-nums">
+              Base salary + bonus
+            </span>
+          </div>
+
           <div className="rounded-2xl bg-[#121214] border border-white/[0.06] p-3">
             <span className="text-[10px] uppercase tracking-wider text-zinc-400 block">
               Daily Allowance
@@ -629,10 +655,11 @@ export function StocksDashboard() {
                         } else {
                           setEditingEnvId(env.id);
                           setEnvAllocInput(String(env.allocated));
+                          setEnvSpentInput(String(env.spent));
                         }
                       }}
                       className="p-1.5 rounded-lg bg-[#2C2C2E] text-zinc-400 hover:text-white"
-                      title="Edit monthly budget limit"
+                      title="Edit monthly budget limit or spent"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -640,34 +667,61 @@ export function StocksDashboard() {
                 </div>
 
                 {isEditingThis && (
-                  <div className="mt-2.5 flex items-center gap-2 bg-[#121214] p-2.5 rounded-xl border border-white/[0.08]">
-                    <span className="text-xs text-zinc-400">
-                      Monthly Limit for {env.ticker} (€):
-                    </span>
-                    <input
-                      type="number"
-                      value={envAllocInput}
-                      onChange={(e) => setEnvAllocInput(e.target.value)}
-                      className="w-24 rounded-lg bg-[#2C2C2E] px-2.5 py-1 text-xs font-bold text-white tabular-nums"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const val = parseFloat(envAllocInput);
-                        if (!isNaN(val) && val >= 0) {
-                          updateEnvelopeAllocation(env.id, val);
+                  <div className="mt-2.5 p-3 rounded-xl bg-[#121214] border border-white/[0.08] space-y-2.5">
+                    <div className="text-[11px] font-semibold text-zinc-300">
+                      Edit {env.ticker} ({env.name})
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-zinc-400 mb-1">
+                          Monthly Limit (€)
+                        </label>
+                        <input
+                          type="number"
+                          value={envAllocInput}
+                          onChange={(e) => setEnvAllocInput(e.target.value)}
+                          className="w-full rounded-lg bg-[#2C2C2E] px-2.5 py-1 text-xs font-bold text-white tabular-nums"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-zinc-400 mb-1">
+                          Current Spent (€)
+                        </label>
+                        <input
+                          type="number"
+                          value={envSpentInput}
+                          onChange={(e) => setEnvSpentInput(e.target.value)}
+                          className="w-full rounded-lg bg-[#2C2C2E] px-2.5 py-1 text-xs font-bold text-white tabular-nums"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditingEnvId(null)}
+                        className="px-2.5 py-1 rounded-lg bg-[#2C2C2E] text-zinc-400 text-xs"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allocVal = parseFloat(envAllocInput);
+                          const spentVal = parseFloat(envSpentInput);
+                          if (!isNaN(allocVal) && allocVal >= 0) {
+                            updateEnvelopeAllocation(env.id, allocVal);
+                          }
+                          if (!isNaN(spentVal) && spentVal >= 0) {
+                            updateEnvelopeSpent(env.id, spentVal);
+                          }
                           setEditingEnvId(null);
-                          showBanner(
-                            `✅ Updated ${env.ticker} monthly budget to ${formatEUR(
-                              val
-                            )}`
-                          );
-                        }
-                      }}
-                      className="ml-auto px-3 py-1 rounded-lg bg-[#0A84FF] text-white text-xs font-semibold"
-                    >
-                      Save
-                    </button>
+                          showBanner(`✅ Updated ${env.ticker} envelope settings`);
+                        }}
+                        className="px-3 py-1 rounded-lg bg-[#0A84FF] text-white text-xs font-semibold"
+                      >
+                        Save
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -869,7 +923,10 @@ export function StocksDashboard() {
                       {formatEUR(tx.amount)}
                     </span>
                     <button
-                      onClick={() => deleteTransaction(tx.id)}
+                      onClick={() => {
+                        deleteTransaction(tx.id);
+                        showBanner(`🗑️ Deleted "${tx.label}" & recalculated balances`);
+                      }}
                       className="text-zinc-500 hover:text-[#FF453A] transition"
                       title="Delete transaction"
                     >

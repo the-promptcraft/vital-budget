@@ -57,13 +57,16 @@ export interface FinanceStoreState {
 
   // Budget & Transactions
   updateBudgetTargets: (income: number, savingsTarget: number) => void;
-  addTransaction: (tx: Omit<Transaction, "id">) => void;
+  addTransaction: (
+    tx: Omit<Transaction, "id"> & { replaceBaseSalary?: boolean }
+  ) => void;
   deleteTransaction: (id: string) => void;
   toggleFixedExpensePaid: (id: string) => void;
   addFixedExpense: (expense: Omit<FixedExpense, "id">) => void;
   updateFixedExpense: (id: string, updates: Partial<FixedExpense>) => void;
   deleteFixedExpense: (id: string) => void;
   updateEnvelopeAllocation: (envelopeId: string, newAllocation: number) => void;
+  updateEnvelopeSpent: (envelopeId: string, newSpent: number) => void;
 
   // Groceries, Nutrients & Receipt Scanner
   addStapleToGroceries: (
@@ -129,7 +132,6 @@ export const useFinanceStore = create<FinanceStoreState>()(
       setQuickAddOpen: (open) => set({ isQuickAddOpen: open }),
       setCurrentMonthLabel: (label) => set({ currentMonthLabel: label }),
 
-      // Roll over to a brand new month: reset envelope spent to 0, mark bills unpaid, clear old transactions
       startNewMonth: (nextMonthLabel) =>
         set((state) => ({
           currentMonthLabel: nextMonthLabel,
@@ -145,8 +147,8 @@ export const useFinanceStore = create<FinanceStoreState>()(
           })),
           transactions: [
             {
-              id: `tx-inc-${Date.now()}`,
-              label: `Monthly Net Income (${nextMonthLabel})`,
+              id: `tx-salary-${Date.now()}`,
+              label: `Monthly Net Salary (${nextMonthLabel})`,
               amount: state.monthlyIncome,
               date: new Date().toISOString().split("T")[0],
               envelopeId: "income",
@@ -156,9 +158,10 @@ export const useFinanceStore = create<FinanceStoreState>()(
           restoSkippedDates: [],
         })),
 
-      // Wipe all demo transactions, groceries & fridge batch meals so the user starts 100% clean
       clearAllDemoData: () =>
         set((state) => ({
+          monthlyIncome: 0,
+          savingsTarget: 0,
           envelopes: state.envelopes.map((env) => ({
             ...env,
             spent: 0,
@@ -171,19 +174,59 @@ export const useFinanceStore = create<FinanceStoreState>()(
           restoSkippedDates: [],
         })),
 
+      // Updating base salary in Setup Month also synchronizes the main salary transaction (never doubles!)
       updateBudgetTargets: (income, savingsTarget) =>
-        set({ monthlyIncome: income, savingsTarget }),
+        set((state) => {
+          const cleanIncome = Math.max(0, Number(income.toFixed(2)));
+          const cleanSavings = Math.max(0, Number(savingsTarget.toFixed(2)));
+
+          const existingSalaryTxIndex = state.transactions.findIndex(
+            (t) =>
+              t.type === "income" &&
+              /salary|salaire|income/i.test(t.label)
+          );
+
+          let updatedTransactions = [...state.transactions];
+          if (existingSalaryTxIndex >= 0) {
+            updatedTransactions[existingSalaryTxIndex] = {
+              ...updatedTransactions[existingSalaryTxIndex],
+              amount: cleanIncome,
+            };
+          } else if (cleanIncome > 0) {
+            updatedTransactions = [
+              {
+                id: `tx-salary-${Date.now()}`,
+                label: "Monthly Net Salary",
+                amount: cleanIncome,
+                date: new Date().toISOString().split("T")[0],
+                envelopeId: "income",
+                type: "income",
+              },
+              ...updatedTransactions,
+            ];
+          }
+
+          return {
+            monthlyIncome: cleanIncome,
+            savingsTarget: cleanSavings,
+            transactions: updatedTransactions,
+          };
+        }),
 
       addTransaction: (tx) => {
+        const { replaceBaseSalary, ...cleanTx } = tx;
         const id = `tx-${Date.now()}`;
-        const newTx: Transaction = { ...tx, id };
+        const newTx: Transaction = { ...cleanTx, id };
 
         set((state) => {
+          // If it's an expense, add to the matching envelope
           const updatedEnvelopes =
-            tx.type === "expense"
+            cleanTx.type === "expense"
               ? state.envelopes.map((env) => {
-                  if (env.id !== tx.envelopeId) return env;
-                  const newSpent = Number((env.spent + tx.amount).toFixed(2));
+                  if (env.id !== cleanTx.envelopeId) return env;
+                  const newSpent = Number(
+                    (env.spent + cleanTx.amount).toFixed(2)
+                  );
                   const ratioPct =
                     env.allocated > 0
                       ? Number(
@@ -203,28 +246,66 @@ export const useFinanceStore = create<FinanceStoreState>()(
                 })
               : state.envelopes;
 
-          const updatedIncome =
-            tx.type === "income"
-              ? Number((state.monthlyIncome + tx.amount).toFixed(2))
-              : state.monthlyIncome;
+          // If it's an income transaction:
+          // - If replaceBaseSalary is true (or label says Salary/Salaire), it SETS the base salary instead of doubling!
+          // - Otherwise (Bonus / Side Income), it adds to monthlyIncome.
+          const isSalaryReplacement =
+            cleanTx.type === "income" &&
+            (replaceBaseSalary || /salary|salaire/i.test(cleanTx.label));
 
-          // Automatically skip batch meal on that date if user logs a Restaurant expense
+          let updatedIncome = state.monthlyIncome;
+          let filteredPrevTransactions = state.transactions;
+
+          if (cleanTx.type === "income") {
+            if (isSalaryReplacement) {
+              // Remove any previous main salary transaction so it doesn't duplicate, and set monthlyIncome = cleanTx.amount
+              const oldSalaryTxs = state.transactions.filter(
+                (t) =>
+                  t.type === "income" && /salary|salaire/i.test(t.label)
+              );
+              const bonusSum = state.transactions
+                .filter(
+                  (t) =>
+                    t.type === "income" && !/salary|salaire/i.test(t.label)
+                )
+                .reduce((s, t) => s + t.amount, 0);
+
+              filteredPrevTransactions =
+                oldSalaryTxs.length > 0
+                  ? state.transactions.filter(
+                      (t) =>
+                        !(
+                          t.type === "income" &&
+                          /salary|salaire/i.test(t.label)
+                        )
+                    )
+                  : state.transactions;
+
+              updatedIncome = Number((cleanTx.amount + bonusSum).toFixed(2));
+            } else {
+              updatedIncome = Number(
+                (state.monthlyIncome + cleanTx.amount).toFixed(2)
+              );
+            }
+          }
+
           const shouldSkipEvening =
-            tx.type === "expense" &&
-            tx.envelopeId === "env-resto" &&
-            !state.restoSkippedDates.includes(tx.date);
+            cleanTx.type === "expense" &&
+            cleanTx.envelopeId === "env-resto" &&
+            !state.restoSkippedDates.includes(cleanTx.date);
 
           return {
-            transactions: [newTx, ...state.transactions],
+            transactions: [newTx, ...filteredPrevTransactions],
             envelopes: updatedEnvelopes,
             monthlyIncome: updatedIncome,
             restoSkippedDates: shouldSkipEvening
-              ? [...state.restoSkippedDates, tx.date]
+              ? [...state.restoSkippedDates, cleanTx.date]
               : state.restoSkippedDates,
           };
         });
       },
 
+      // Deleting ANY transaction (expense OR income) immediately updates envelopes OR monthlyIncome!
       deleteTransaction: (id) =>
         set((state) => {
           const target = state.transactions.find((t) => t.id === id);
@@ -245,9 +326,18 @@ export const useFinanceStore = create<FinanceStoreState>()(
                 )
               : state.envelopes;
 
+          const updatedIncome =
+            target.type === "income"
+              ? Math.max(
+                  0,
+                  Number((state.monthlyIncome - target.amount).toFixed(2))
+                )
+              : state.monthlyIncome;
+
           return {
             transactions: state.transactions.filter((t) => t.id !== id),
             envelopes: updatedEnvelopes,
+            monthlyIncome: updatedIncome,
           };
         }),
 
@@ -282,6 +372,15 @@ export const useFinanceStore = create<FinanceStoreState>()(
         set((state) => ({
           envelopes: state.envelopes.map((e) =>
             e.id === envelopeId ? { ...e, allocated: newAllocation } : e
+          ),
+        })),
+
+      updateEnvelopeSpent: (envelopeId, newSpent) =>
+        set((state) => ({
+          envelopes: state.envelopes.map((e) =>
+            e.id === envelopeId
+              ? { ...e, spent: Math.max(0, Number(newSpent.toFixed(2))) }
+              : e
           ),
         })),
 
@@ -586,7 +685,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
       },
     }),
     {
-      name: "vital-budget-storage-v2-en",
+      name: "vital-budget-storage-v3-en",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         currentMonthLabel: state.currentMonthLabel,
