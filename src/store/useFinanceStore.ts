@@ -294,8 +294,12 @@ export const useFinanceStore = create<FinanceStoreState>()(
             cleanTx.envelopeId === "env-resto" &&
             !state.restoSkippedDates.includes(cleanTx.date);
 
+          const mergedTransactions = [newTx, ...filteredPrevTransactions].sort(
+            (a, b) => b.date.localeCompare(a.date)
+          );
+
           return {
-            transactions: [newTx, ...filteredPrevTransactions],
+            transactions: mergedTransactions,
             envelopes: updatedEnvelopes,
             monthlyIncome: updatedIncome,
             restoSkippedDates: shouldSkipEvening

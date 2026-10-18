@@ -9,7 +9,7 @@ import {
   UnitType,
 } from "@/lib/seedData";
 import { calculateUnitPrice, formatEUR } from "@/lib/utils";
-import { X, Wallet, ShoppingCart, CookingPot, Sparkles } from "lucide-react";
+import { X, Wallet, ShoppingCart, CookingPot, Sparkles, Calendar } from "lucide-react";
 
 const FAMILIES: NutritionalFamily[] = [
   "Veggies & Vitamins",
@@ -42,6 +42,7 @@ export function QuickAddModal() {
   // Transaction state
   const [txLabel, setTxLabel] = useState("");
   const [txAmount, setTxAmount] = useState("");
+  const [txDate, setTxDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [txEnvelopeId, setTxEnvelopeId] = useState("env-food");
   const [txType, setTxType] = useState<"expense" | "income">("expense");
   const [incomeMode, setIncomeMode] = useState<"salary" | "bonus">("salary");
@@ -89,16 +90,19 @@ export function QuickAddModal() {
             : "Extra Bonus / Income"
           : "Expense";
 
+      const selectedDate = txDate.trim() || new Date().toISOString().split("T")[0];
+
       addTransaction({
         label: txLabel.trim() || defaultLabel,
         amount,
-        date: new Date().toISOString().split("T")[0],
+        date: selectedDate,
         envelopeId: txType === "income" ? "income" : txEnvelopeId,
         type: txType,
         replaceBaseSalary: txType === "income" && incomeMode === "salary",
       });
       setTxLabel("");
       setTxAmount("");
+      setTxDate(new Date().toISOString().split("T")[0]);
       setQuickAddOpen(false);
     } else if (mode === "grocery") {
       const price = parseFloat(grPrice);
@@ -343,6 +347,55 @@ export function QuickAddModal() {
                         </select>
                       </div>
                     )}
+                  </div>
+
+                  {/* Transaction Date with Shortcuts */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-[#0A84FF]" />
+                        Transaction Date
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setTxDate(new Date().toISOString().split("T")[0])}
+                          className="px-2 py-0.5 rounded-md bg-[#2C2C2E] hover:bg-white/10 text-[10px] text-zinc-300 font-medium transition"
+                        >
+                          Today
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const d = new Date();
+                            d.setDate(d.getDate() - 1);
+                            setTxDate(d.toISOString().split("T")[0]);
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-[#2C2C2E] hover:bg-white/10 text-[10px] text-zinc-300 font-medium transition"
+                        >
+                          Yesterday
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const now = new Date();
+                            const yyyy = now.getFullYear();
+                            const mm = String(now.getMonth() + 1).padStart(2, "0");
+                            setTxDate(`${yyyy}-${mm}-01`);
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-[#2C2C2E] hover:bg-white/10 text-[10px] text-[#0A84FF] font-medium transition"
+                        >
+                          1st of Month
+                        </button>
+                      </div>
+                    </div>
+                    <input
+                      type="date"
+                      required
+                      value={txDate}
+                      onChange={(e) => setTxDate(e.target.value)}
+                      className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#0A84FF] [color-scheme:dark]"
+                    />
                   </div>
                 </>
               )}

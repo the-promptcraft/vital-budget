@@ -37,6 +37,26 @@ const MONTHS_OPTIONS = [
   "March 2027",
 ];
 
+function formatDateLabel(dStr: string) {
+  if (!dStr) return "";
+  try {
+    const parts = dStr.split("-");
+    if (parts.length === 3) {
+      const d = new Date(
+        parseInt(parts[0], 10),
+        parseInt(parts[1], 10) - 1,
+        parseInt(parts[2], 10)
+      );
+      return d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    }
+  } catch {}
+  return dStr;
+}
+
 export function StocksDashboard() {
   const {
     currentMonthLabel,
@@ -905,7 +925,7 @@ export function StocksDashboard() {
                         {tx.label}
                       </p>
                       <p className="text-[10px] text-zinc-400 tabular-nums">
-                        {tx.date} •{" "}
+                        {formatDateLabel(tx.date)} •{" "}
                         {tx.type === "income"
                           ? "INCOME"
                           : env?.ticker || "BUDGET"}
