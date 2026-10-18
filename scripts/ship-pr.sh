@@ -4,6 +4,12 @@ set -e
 MSG="${1:-feat: update VitalBudget}"
 CURRENT_BRANCH=$(git branch --show-current)
 
+if [ -z "$(git status --porcelain)" ]; then
+  echo "✨ Aucun changement en attente dans le dossier (working tree clean)."
+  echo "🚀 Votre code est déjà 100% synchronisé avec GitHub et Vercel !"
+  exit 0
+fi
+
 # Si on est sur main, on crée automatiquement une branche dédiée pour la Pull Request
 if [ "$CURRENT_BRANCH" = "main" ]; then
   BRANCH_NAME="update-$(date +%Y%m%d-%H%M%S)"
