@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "ship": "git add -A && git commit -m 'feat: update VitalBudget' && git push origin main"
+    "ship": "zsh ./scripts/ship-pr.sh",
+    "pr": "zsh ./scripts/ship-pr.sh",
+    "ship:direct": "git add -A && git commit -m 'feat: update VitalBudget' && git push origin main"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
