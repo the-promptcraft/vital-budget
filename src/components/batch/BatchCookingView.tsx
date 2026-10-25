@@ -56,6 +56,7 @@ export function BatchCookingView() {
     toggleFreezeBatchMeal,
     addBatchMeal,
     deleteBatchMeal,
+    resetBatchMealsOnly,
     addCustomGroceryItem,
     toggleRestoDate,
   } = useFinanceStore();
@@ -438,21 +439,34 @@ export function BatchCookingView() {
       <section className="rounded-3xl apple-glass border border-black/[0.07] p-5 shadow-xl">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <span className="text-[11px] font-mono uppercase tracking-wider text-[#30D158]">
-              AUTO USE-BY DATE (DLC) & EVENING PLANNER
+            <span className="text-[11px] font-mono uppercase tracking-wider text-[#248A3D]">
+              DLC AUTOMATIQUE & PLANNING REPAS
             </span>
             <h2 className="text-xl font-bold text-[#1D1D1F] mt-0.5">
-              Batch Cooking & Fridge Stock
+              Batch Cooking & Stock Frigo
             </h2>
           </div>
 
-          <button
-            onClick={() => setShowBuilder(!showBuilder)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#0A84FF] text-[#1D1D1F] text-xs font-semibold shadow-md shadow-[#0A84FF]/20 hover:opacity-95 transition shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            Log Cooked Batch
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => {
+                resetBatchMealsOnly();
+                triggerToast("🔄 Stock Frigo Batch remis à zéro (0 boîte) !");
+              }}
+              className="flex items-center gap-1 px-2.5 py-2 rounded-2xl bg-[#FF3B30]/10 hover:bg-[#FF3B30]/15 border border-[#FF3B30]/20 text-[10px] font-bold text-[#FF3B30] transition active:scale-95"
+              title="Vider tout le stock frigo Batch"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset Frigo
+            </button>
+            <button
+              onClick={() => setShowBuilder(!showBuilder)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#007AFF] text-white text-xs font-semibold shadow-md shadow-[#007AFF]/20 hover:opacity-95 transition shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              Ajouter Plat
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2.5 mt-4">

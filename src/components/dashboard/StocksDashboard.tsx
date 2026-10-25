@@ -9,7 +9,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { useFinanceStore } from "@/store/useFinanceStore";
-import { formatEUR } from "@/lib/utils";
+import { formatEUR, getRemainingDaysInMonth } from "@/lib/utils";
 import {
   Trash2,
   RotateCcw,
@@ -92,6 +92,10 @@ export function StocksDashboard() {
     addTransaction,
     deleteTransaction,
     clearAllDemoData,
+    setDisposableBalance,
+    resetEnvelopesSpent,
+    resetTransactionsOnly,
+    updateEnvelopeSpent,
   } = useFinanceStore();
 
   const [expandedEnvId, setExpandedEnvId] = useState<string | null>(null);
@@ -136,9 +140,7 @@ export function StocksDashboard() {
     (disposableBeforeVariable - totalVariableSpent).toFixed(2)
   );
 
-  const todayDay = 18;
-  const daysInMonth = 31;
-  const remainingDays = Math.max(1, daysInMonth - todayDay);
+  const remainingDays = getRemainingDaysInMonth();
   const dailyBudgetAllowed = Number(
     (disposableLeft / remainingDays).toFixed(2)
   );
@@ -320,6 +322,29 @@ export function StocksDashboard() {
             </span>
           </motion.div>
         </div>
+
+        {/* Physical Reset Controls for Hero Balance */}
+        <div className="relative mt-3.5 pt-3 border-t border-slate-200/60 flex items-center justify-between gap-2 flex-wrap">
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            type="button"
+            onClick={() => setDisposableBalance(0)}
+            className="px-3 py-1.5 rounded-full bg-white/90 hover:bg-white border border-slate-200/80 text-[11px] font-bold text-[#475569] hover:text-red-600 flex items-center gap-1.5 shadow-2xs transition-colors"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>Reset Solde (0 €)</span>
+          </motion.button>
+
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            type="button"
+            onClick={clearAllDemoData}
+            className="px-3 py-1.5 rounded-full bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-[11px] font-bold text-red-600 flex items-center gap-1.5 transition-colors"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>Reset Tout (Nouveau Mois à 0)</span>
+          </motion.button>
+        </div>
       </motion.section>
 
       {/* 2. DUAL-AGENT COMMAND CENTER (KORA FLOW & KORA CHEF) */}
@@ -332,18 +357,30 @@ export function StocksDashboard() {
         transition={{ ...APPLE_SPRING, delay: 0.12 }}
         className="apple-glass rounded-[30px] p-5"
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
           <div>
             <h3 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
               Enveloppes Intelligentes
             </h3>
             <p className="text-[11px] text-[#64748B]">
-              Touche une enveloppe pour un ajout 1-Tap ou parle à Kora
+              Touche une enveloppe pour un ajout 1-Tap ou Reset
             </p>
           </div>
-          <span className="text-xs font-bold text-[#0F172A] tabular-nums">
-            <AnimatedCounter value={totalVariableSpent} suffix=" € utilisés" />
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#0F172A] tabular-nums">
+              <AnimatedCounter value={totalVariableSpent} suffix=" € utilisés" />
+            </span>
+            <motion.button
+              whileTap={{ scale: 0.94 }}
+              type="button"
+              onClick={resetEnvelopesSpent}
+              className="px-2.5 py-1 rounded-full bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-[11px] font-bold text-red-600 flex items-center gap-1 transition-colors"
+              title="Remettre toutes les enveloppes dépensées à 0 €"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset 0 €</span>
+            </motion.button>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -436,12 +473,18 @@ export function StocksDashboard() {
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={APPLE_SPRING}
-                      className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 overflow-hidden"
+                      className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 overflow-hidden flex-wrap"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <span className="text-[11px] font-medium text-[#64748B]">
-                        Ajout rapide :
-                      </span>
+                      <motion.button
+                        whileTap={{ scale: 0.92 }}
+                        type="button"
+                        onClick={() => updateEnvelopeSpent(env.id, 0)}
+                        className="px-2.5 py-1 rounded-xl bg-red-500/10 hover:bg-red-500/15 text-red-600 text-[11px] font-bold flex items-center gap-1 transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Reset 0 €</span>
+                      </motion.button>
                       <div className="flex items-center gap-1.5">
                         {[5, 15, 30].map((amt) => (
                           <motion.button
@@ -478,17 +521,15 @@ export function StocksDashboard() {
           <h3 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
             Journal en Temps Réel
           </h3>
-          {transactions.length > 0 && (
-            <motion.button
-              whileTap={{ scale: 0.94 }}
-              type="button"
-              onClick={clearAllDemoData}
-              className="text-[11px] font-semibold text-[#64748B] hover:text-[#0F172A] flex items-center gap-1 transition-colors"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Remettre à zéro</span>
-            </motion.button>
-          )}
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            type="button"
+            onClick={resetTransactionsOnly}
+            className="px-2.5 py-1 rounded-full bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-[11px] font-bold text-red-600 flex items-center gap-1 transition-colors"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>Reset Journal</span>
+          </motion.button>
         </div>
 
         {transactions.length === 0 ? (

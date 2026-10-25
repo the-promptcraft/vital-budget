@@ -24,6 +24,7 @@ import {
 import {
   calculateUnitPrice,
   detectShelfLifeDays,
+  getCurrentFrenchMonthLabel,
   ScannedReceiptItem,
 } from "@/lib/utils";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -89,6 +90,11 @@ export interface FinanceStoreState {
   // Monthly Lifecycle & Real Data Controls
   startNewMonth: (nextMonthLabel: string) => void;
   clearAllDemoData: () => void;
+  resetEnvelopesSpent: () => void;
+  resetTransactionsOnly: () => void;
+  resetGroceriesOnly: () => void;
+  resetBatchMealsOnly: () => void;
+  resetAgendaOnly: () => void;
 
   // Budget & Transactions
   setDisposableBalance: (targetDisposable: number) => void;
@@ -269,7 +275,7 @@ export const useFinanceStore = create<FinanceStoreState>()(
 
       startNewMonth: (nextMonthLabel) =>
         set((state) => ({
-          currentMonthLabel: nextMonthLabel,
+          currentMonthLabel: nextMonthLabel || getCurrentFrenchMonthLabel(),
           envelopes: state.envelopes.map((env) => ({
             ...env,
             spent: 0,
@@ -280,23 +286,28 @@ export const useFinanceStore = create<FinanceStoreState>()(
             ...fix,
             isPaid: false,
           })),
-          transactions: [
-            {
-              id: `tx-salary-${Date.now()}`,
-              label: `Monthly Net Salary (${nextMonthLabel})`,
-              amount: state.monthlyIncome,
-              date: new Date().toISOString().split("T")[0],
-              envelopeId: "income",
-              type: "income",
-            },
-          ],
+          transactions:
+            state.monthlyIncome > 0
+              ? [
+                  {
+                    id: `tx-salary-${Date.now()}`,
+                    label: `Revenu mensuel (${nextMonthLabel || getCurrentFrenchMonthLabel()})`,
+                    amount: state.monthlyIncome,
+                    date: new Date().toISOString().split("T")[0],
+                    envelopeId: "income",
+                    type: "income",
+                  },
+                ]
+              : [],
           restoSkippedDates: [],
         })),
 
       clearAllDemoData: () =>
         set((state) => ({
+          currentMonthLabel: getCurrentFrenchMonthLabel(),
           monthlyIncome: 0,
           savingsTarget: 0,
+          fixedExpenses: [],
           envelopes: state.envelopes.map((env) => ({
             ...env,
             spent: 0,
@@ -307,7 +318,48 @@ export const useFinanceStore = create<FinanceStoreState>()(
           groceryItems: [],
           batchMeals: [],
           restoSkippedDates: [],
+          agentReply: null,
+          agentChatHistory: [],
+          agentLastAction: null,
+          savedAgendaEvents: [],
         })),
+
+      resetEnvelopesSpent: () =>
+        set((state) => ({
+          envelopes: state.envelopes.map((env) => ({
+            ...env,
+            spent: 0,
+            trendPct: 0,
+            sparkline: [0, 0, 0, 0, 0, 0, 0],
+          })),
+        })),
+
+      resetTransactionsOnly: () =>
+        set((state) => ({
+          transactions: [],
+          envelopes: state.envelopes.map((env) => ({
+            ...env,
+            spent: 0,
+            trendPct: 0,
+            sparkline: [0, 0, 0, 0, 0, 0, 0],
+          })),
+        })),
+
+      resetGroceriesOnly: () =>
+        set({
+          groceryItems: [],
+        }),
+
+      resetBatchMealsOnly: () =>
+        set({
+          batchMeals: [],
+          restoSkippedDates: [],
+        }),
+
+      resetAgendaOnly: () =>
+        set({
+          savedAgendaEvents: [],
+        }),
 
       // Updating base salary in Setup Month also synchronizes the main salary transaction (never doubles!)
       updateBudgetTargets: (income, savingsTarget) =>

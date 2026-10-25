@@ -7,16 +7,34 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatEUR(amount: number, showSign = false): string {
-  const formatted = new Intl.NumberFormat("en-IE", {
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  const formatted = new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(Math.abs(amount));
+  }).format(Math.abs(safeAmount));
 
-  if (showSign && amount > 0) return `+${formatted}`;
-  if (amount < 0) return `-${formatted}`;
+  if (showSign && safeAmount > 0) return `+${formatted}`;
+  if (safeAmount < 0) return `-${formatted}`;
   return formatted;
+}
+
+export function getRemainingDaysInMonth(): number {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const today = now.getDate();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  return Math.max(1, daysInMonth - today + 1);
+}
+
+export function getCurrentFrenchMonthLabel(): string {
+  const label = new Date().toLocaleDateString("fr-FR", {
+    month: "long",
+    year: "numeric",
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 export function calculateUnitPrice(price: number, quantity: number): number {
@@ -30,7 +48,10 @@ export function calculateInflationPct(
 ): number {
   if (!referenceUnitPrice || referenceUnitPrice <= 0) return 0;
   return Number(
-    (((currentUnitPrice - referenceUnitPrice) / referenceUnitPrice) * 100).toFixed(1)
+    (
+      ((currentUnitPrice - referenceUnitPrice) / referenceUnitPrice) *
+      100
+    ).toFixed(1)
   );
 }
 
@@ -47,61 +68,43 @@ export interface DlcInfo {
   reason: string;
 }
 
-export function detectShelfLifeDays(title: string, ingredientsText = ""): {
+export function detectShelfLifeDays(
+  title: string,
+  ingredientsText = ""
+): {
   days: number;
   reason: string;
 } {
   const text = `${title} ${ingredientsText}`.toLowerCase();
 
-  // Minced meat, Bolognese, fish, seafood => max 3 days in fridge
+  // Fish, seafood, minced meat => max 2-3 days in fridge
   if (
-    text.includes("bolo") ||
-    text.includes("beef") ||
-    text.includes("mince") ||
-    text.includes("ground") ||
-    text.includes("haché") ||
-    text.includes("boeuf") ||
-    text.includes("bœuf") ||
-    text.includes("tuna") ||
-    text.includes("thon") ||
-    text.includes("sardine") ||
-    text.includes("mackerel") ||
-    text.includes("maquereau") ||
-    text.includes("salmon") ||
-    text.includes("saumon") ||
-    text.includes("fish") ||
-    text.includes("poisson") ||
-    text.includes("shrimp")
+    /saumon|salmon|poisson|fish|thon|tuna|sardine|maquereau|mackerel|crevette|shrimp|cabillaud|mer|bolo|haché|boeuf|bœuf|beef|mince|ground/i.test(
+      text
+    )
   ) {
     return {
       days: 3,
-      reason: "Sensitive protein (ground beef / cooked fish: max 72h at 4°C)",
+      reason: "Protéine sensible (poisson / viande hachée : max 72h à 4°C)",
     };
   }
 
   // Poultry (chicken, turkey), cooked eggs => 4 days
   if (
-    text.includes("chicken") ||
-    text.includes("poulet") ||
-    text.includes("turkey") ||
-    text.includes("dinde") ||
-    text.includes("poultry") ||
-    text.includes("egg") ||
-    text.includes("œuf") ||
-    text.includes("oeuf") ||
-    text.includes("frittata") ||
-    text.includes("curry")
+    /poulet|chicken|dinde|turkey|volaille|poultry|oeuf|œuf|egg|frittata|curry/i.test(
+      text
+    )
   ) {
     return {
       days: 4,
-      reason: "Cooked poultry / eggs (up to 4 days in the fridge at 4°C)",
+      reason: "Volaille cuite / œufs (jusqu'à 4 jours au frigo à 4°C)",
     };
   }
 
   // Plant-based, legumes (dahl, chili, lentils, chickpeas, oats) => 5 days
   return {
     days: 5,
-    reason: "Plant-based / legumes / grains (up to 5 days in the fridge)",
+    reason: "Végétal / légumineuses / céréales (jusqu'à 5 jours au frigo)",
   };
 }
 
@@ -113,9 +116,7 @@ export function computeMealDlc(
   isFrozen?: boolean
 ): DlcInfo {
   const detected = detectShelfLifeDays(title, ingredientsText);
-  const shelfLifeDays = isFrozen
-    ? 90
-    : customShelfLifeDays ?? detected.days;
+  const shelfLifeDays = isFrozen ? 90 : customShelfLifeDays ?? detected.days;
 
   const cookedDate = new Date(lastCookedAtIso || new Date().toISOString());
   const dlcDate = new Date(cookedDate);
@@ -125,10 +126,10 @@ export function computeMealDlc(
   const diffMs = dlcDate.getTime() - now.getTime();
   const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-  const dlcFormatted = dlcDate.toLocaleDateString("en-US", {
+  const dlcFormatted = dlcDate.toLocaleDateString("fr-FR", {
     weekday: "short",
-    month: "short",
     day: "numeric",
+    month: "short",
   });
 
   if (isFrozen) {
@@ -138,8 +139,8 @@ export function computeMealDlc(
       dlcFormatted,
       daysLeft,
       status: "frozen",
-      badgeLabel: `❄️ Frozen (Use by ${dlcFormatted})`,
-      reason: "Stored in freezer (-18°C)",
+      badgeLabel: `❄️ Congelé (DLC ${dlcFormatted})`,
+      reason: "Conservé au congélateur (-18°C)",
     };
   }
 
@@ -150,7 +151,7 @@ export function computeMealDlc(
       dlcFormatted,
       daysLeft,
       status: "expired",
-      badgeLabel: `⚠️ Expired (${dlcFormatted})`,
+      badgeLabel: `⚠️ DLC dépassée (${dlcFormatted})`,
       reason: detected.reason,
     };
   }
@@ -164,8 +165,8 @@ export function computeMealDlc(
       status: "warning",
       badgeLabel:
         daysLeft === 0
-          ? `⏳ Eat Today (${dlcFormatted})`
-          : `⏳ 1 Day Left • Eat by ${dlcFormatted}`,
+          ? `⏳ À manger aujourd'hui (${dlcFormatted})`
+          : `⏳ 1 jour restant • DLC ${dlcFormatted}`,
       reason: detected.reason,
     };
   }
@@ -176,13 +177,13 @@ export function computeMealDlc(
     dlcFormatted,
     daysLeft,
     status: "fresh",
-    badgeLabel: `✅ Use by ${dlcFormatted} (${daysLeft}d left)`,
+    badgeLabel: `✅ DLC ${dlcFormatted} (${daysLeft}j restants)`,
     reason: detected.reason,
   };
 }
 
 // ============================================================================
-// BILINGUAL RECEIPT PARSER (ENGLISH & FRENCH RECEIPTS -> ENGLISH CATEGORIES)
+// BILINGUAL RECEIPT PARSER (FRENCH & ENGLISH SUPERMARKET RECEIPTS)
 // ============================================================================
 export interface ScannedReceiptItem {
   name: string;
@@ -204,34 +205,21 @@ export function classifyReceiptItem(rawName: string): {
   const lower = rawName.toLowerCase();
 
   if (
-    lower.includes("brocoli") ||
-    lower.includes("broccoli") ||
-    lower.includes("spinach") ||
-    lower.includes("epinard") ||
-    lower.includes("épinard") ||
-    lower.includes("zucchini") ||
-    lower.includes("courgette") ||
-    lower.includes("cabbage") ||
-    lower.includes("chou")
+    /brocoli|broccoli|spinach|epinard|épinard|zucchini|courgette|cabbage|chou|salade|laitue|roquette|haricot vert|poireau|concombre|avocat/i.test(
+      lower
+    )
   ) {
     return {
       emoji: "🥦",
       family: "Veggies & Vitamins",
       vegSubFamily: "Greens & Cruciferous",
-      vitamins: ["Vit C", "Vit K", "Folate (B9)"],
+      vitamins: ["Vit C", "Vit K", "Folates (B9)"],
     };
   }
   if (
-    lower.includes("carrot") ||
-    lower.includes("carotte") ||
-    lower.includes("tomato") ||
-    lower.includes("tomate") ||
-    lower.includes("pepper") ||
-    lower.includes("poivron") ||
-    lower.includes("squash") ||
-    lower.includes("courge") ||
-    lower.includes("sweet potato") ||
-    lower.includes("patate douce")
+    /carrot|carotte|tomato|tomate|pepper|poivron|squash|courge|potiron|patate douce|sweet potato|betterave|radis/i.test(
+      lower
+    )
   ) {
     return {
       emoji: "🥕",
@@ -240,54 +228,38 @@ export function classifyReceiptItem(rawName: string): {
       vitamins: ["Vit A", "Vit C", "Potassium"],
     };
   }
-  if (
-    lower.includes("onion") ||
-    lower.includes("oignon") ||
-    lower.includes("garlic") ||
-    lower.includes("ail") ||
-    lower.includes("leek") ||
-    lower.includes("poireau")
-  ) {
+  if (/onion|oignon|garlic|ail|echalote|échalote|champignon/i.test(lower)) {
     return {
       emoji: "🧅",
       family: "Veggies & Vitamins",
       vegSubFamily: "Alliums & Roots",
-      vitamins: ["Allicin", "Quercetin"],
+      vitamins: ["Allicine", "Quercétine"],
     };
   }
   if (
-    lower.includes("lentil") ||
-    lower.includes("lentille") ||
-    lower.includes("chickpea") ||
-    lower.includes("pois chiche") ||
-    lower.includes("bean") ||
-    lower.includes("haricot")
+    /lentil|lentille|chickpea|pois chiche|bean|haricot|fève|feve|tofu|soja/i.test(
+      lower
+    )
   ) {
     return {
       emoji: "🫘",
       family: "Veggies & Vitamins",
       vegSubFamily: "Legumes & Pulses",
-      vitamins: ["Iron", "Magnesium", "Fiber"],
+      vitamins: ["Fer", "Magnésium", "Fibres"],
     };
   }
   if (
-    lower.includes("chicken") ||
-    lower.includes("poulet") ||
-    lower.includes("turkey") ||
-    lower.includes("dinde") ||
-    lower.includes("beef") ||
-    lower.includes("boeuf") ||
-    lower.includes("bœuf") ||
-    lower.includes("steak") ||
-    lower.includes("viande")
+    /chicken|poulet|turkey|dinde|volaille|beef|boeuf|bœuf|steak|viande|jambon|lardon|porc|veau|agneau|canard|filet/i.test(
+      lower
+    )
   ) {
     return {
       emoji: "🍗",
       family: "Whole Proteins",
-      vitamins: ["Vit B12", "Iron", "Zinc"],
+      vitamins: ["Vit B12", "Fer", "Zinc"],
     };
   }
-  if (lower.includes("egg") || lower.includes("oeuf") || lower.includes("œuf")) {
+  if (/egg|oeuf|œuf/i.test(lower)) {
     return {
       emoji: "🥚",
       family: "Whole Proteins",
@@ -295,74 +267,64 @@ export function classifyReceiptItem(rawName: string): {
     };
   }
   if (
-    lower.includes("tuna") ||
-    lower.includes("thon") ||
-    lower.includes("sardine") ||
-    lower.includes("mackerel") ||
-    lower.includes("maquereau") ||
-    lower.includes("salmon") ||
-    lower.includes("saumon")
+    /tuna|thon|sardine|mackerel|maquereau|salmon|saumon|cabillaud|colin|crevette|poisson|truite|merlu/i.test(
+      lower
+    )
   ) {
     return {
       emoji: "🐟",
       family: "Whole Proteins",
-      vitamins: ["Omega-3", "Vit B12", "Vit D"],
+      vitamins: ["Oméga-3", "Vit B12", "Vit D"],
     };
   }
   if (
-    lower.includes("pasta") ||
-    lower.includes("pate") ||
-    lower.includes("pâte") ||
-    lower.includes("spaghetti") ||
-    lower.includes("rice") ||
-    lower.includes("riz") ||
-    lower.includes("oat") ||
-    lower.includes("avoine") ||
-    lower.includes("quinoa")
+    /lait|milk|yaourt|yogurt|fromage|cheese|comté|comte|emmental|mozzarella|feta|chèvre|chevre|fromage blanc|skyr|petit suisse|crème|creme/i.test(
+      lower
+    )
+  ) {
+    return {
+      emoji: "🥛",
+      family: "Whole Proteins",
+      vitamins: ["Calcium", "Vit B12", "Protéines"],
+    };
+  }
+  if (
+    /pasta|pate|pâte|spaghetti|macaroni|penne|tagliatelle|rice|riz|oat|avoine|quinoa|boulgour|semoule|pain|baguette|mie|farine|pomme de terre|patate|gnocchi/i.test(
+      lower
+    )
   ) {
     return {
       emoji: "🍝",
       family: "Complex Carbs",
-      vitamins: ["Magnesium", "Vit B1"],
+      vitamins: ["Magnésium", "Vit B1", "Fibres"],
     };
   }
   if (
-    lower.includes("apple") ||
-    lower.includes("pomme") ||
-    lower.includes("kiwi") ||
-    lower.includes("banana") ||
-    lower.includes("banane") ||
-    lower.includes("lemon") ||
-    lower.includes("citron")
+    /apple|pomme|kiwi|banana|banane|lemon|citron|orange|clémentine|clementine|mandarine|fraise|framboise|myrtille|poire|pêche|peche|abricot|raisin|mangue|ananas|melon|fruit|compote/i.test(
+      lower
+    )
   ) {
     return {
       emoji: "🥝",
       family: "Fruits & Antioxidants",
-      vitamins: ["Vit C++", "Antioxidants"],
+      vitamins: ["Vit C++", "Antioxydants"],
     };
   }
   if (
-    lower.includes("oil") ||
-    lower.includes("huile") ||
-    lower.includes("olive") ||
-    lower.includes("walnut") ||
-    lower.includes("noix") ||
-    lower.includes("chia") ||
-    lower.includes("almond")
+    /oil|huile|olive|colza|beurre|butter|walnut|noix|chia|almond|amande|noisette|cacahuète|pistache/i.test(
+      lower
+    )
   ) {
     return {
       emoji: "🫒",
       family: "Healthy Fats",
-      vitamins: ["Omega-3", "Vit E"],
+      vitamins: ["Oméga-3", "Vit E"],
     };
   }
   if (
-    lower.includes("cookie") ||
-    lower.includes("biscuit") ||
-    lower.includes("chips") ||
-    lower.includes("soda") ||
-    lower.includes("chocolat") ||
-    lower.includes("ice cream")
+    /cookie|biscuit|chips|soda|coca|chocolat|ice cream|glace|bonbon|gâteau|gateau|nutella|brioche|croissant|pizza|alcool|bière|biere|vin/i.test(
+      lower
+    )
   ) {
     return {
       emoji: "🍪",
@@ -373,40 +335,55 @@ export function classifyReceiptItem(rawName: string): {
   return {
     emoji: "🛒",
     family: "Whole Proteins",
-    vitamins: ["Whole Nutrients"],
+    vitamins: ["Nutriments Essentiels"],
   };
 }
 
 export function parseReceiptText(rawText: string): ScannedReceiptItem[] {
   const lines = rawText
-    .split("\n")
+    .split(/\r?\n/)
     .map((l) => l.trim())
-    .filter(Boolean);
+    .filter((l) => l.length >= 3);
 
   const items: ScannedReceiptItem[] = [];
 
-  for (const line of lines) {
-    if (/total|tva|vat|card|carte|thank|merci|receipt|ticket/i.test(line))
-      continue;
+  const ignoreRegex =
+    /\b(?:total|sous-total|subtotal|montant|tva|vat|carte|bancaire|cb|visa|mastercard|sans\s*contact|especes|espèces|rendu|monnaie|merci|thank|ticket|caisse|magasin|siret|tel|tél|date|heure|articles?|solde|remise|fidélité|fidelite|autorisation|paiement|avoir|net\s+a\s+payer|payer)\b/i;
 
-    const priceMatch = line.match(/(\d+[.,]\d{2})\s*€?$/);
+  for (const line of lines) {
+    if (ignoreRegex.test(line)) continue;
+    // Ignore date or time lines like 25/10/2026 or 14:32
+    if (/^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/.test(line)) continue;
+    // Ignore phone or barcode lines with 8+ consecutive digits
+    if (/\d{8,}/.test(line)) continue;
+
+    // Match price at end of line, allowing optional € / EUR and trailing French receipt VAT code (A, B, C, *, 1, 2)
+    const priceMatch = line.match(
+      /(\d{1,3}[.,]\d{2})\s*(?:€|eur|e)?\s*(?:[a-cA-C*1-9])?$/i
+    );
     if (!priceMatch) continue;
 
     const price = parseFloat(priceMatch[1].replace(",", "."));
-    if (isNaN(price) || price <= 0 || price > 200) continue;
+    if (isNaN(price) || price <= 0.1 || price > 250) continue;
 
     const rawLabel = line
       .slice(0, priceMatch.index)
-      .replace(/[-.•*]+$/g, "")
+      .replace(/[-.•*_+=:]+$/g, "")
+      .replace(/^\d+\s*[xX*]\s*/, "")
+      .replace(/\s+/g, " ")
       .trim();
-    if (!rawLabel) continue;
+
+    // Must contain at least 2 letters so we don't parse random numbers
+    if (!rawLabel || !/[a-zA-ZÀ-ÿ]{2,}/.test(rawLabel)) continue;
 
     let quantity = 1.0;
     let unit: "kg" | "L" | "unit" = "kg";
 
     const gramsMatch = rawLabel.match(/(\d+)\s*g\b/i);
     const kgMatch = rawLabel.match(/(\d+(?:[.,]\d+)?)\s*kg\b/i);
+    const mlMatch = rawLabel.match(/(\d+)\s*(?:ml|cl)\b/i);
     const lMatch = rawLabel.match(/(\d+(?:[.,]\d+)?)\s*l\b/i);
+    const packMatch = rawLabel.match(/(?:x|lot\s*de\s*)(\d+)\b/i);
 
     if (gramsMatch) {
       quantity = Number((parseInt(gramsMatch[1], 10) / 1000).toFixed(3));
@@ -414,9 +391,18 @@ export function parseReceiptText(rawText: string): ScannedReceiptItem[] {
     } else if (kgMatch) {
       quantity = parseFloat(kgMatch[1].replace(",", "."));
       unit = "kg";
+    } else if (mlMatch) {
+      const val = parseInt(mlMatch[1], 10);
+      quantity = rawLabel.toLowerCase().includes("cl")
+        ? Number((val / 100).toFixed(2))
+        : Number((val / 1000).toFixed(3));
+      unit = "L";
     } else if (lMatch) {
       quantity = parseFloat(lMatch[1].replace(",", "."));
       unit = "L";
+    } else if (packMatch) {
+      quantity = parseInt(packMatch[1], 10) || 1;
+      unit = "unit";
     }
 
     const meta = classifyReceiptItem(rawLabel);
@@ -465,7 +451,7 @@ export function generateBatchCalendarIcs(
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//VitalBudget//BatchCooking Planner//EN",
+    "PRODID:-//Kora//BatchCooking Planner//FR",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
   ];
@@ -474,7 +460,7 @@ export function generateBatchCalendarIcs(
     const cleanDate = ev.dateYmd.replace(/-/g, "");
     lines.push(
       "BEGIN:VEVENT",
-      `UID:vitalbudget-${cleanDate}-${idx}@vitalbudget.app`,
+      `UID:kora-${cleanDate}-${idx}@kora.app`,
       `DTSTAMP:${cleanDate}T180000Z`,
       `DTSTART:${cleanDate}T200000`,
       `DTEND:${cleanDate}T204500`,
