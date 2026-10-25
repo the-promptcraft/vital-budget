@@ -14,9 +14,9 @@ import { cn } from "@/lib/utils";
 
 const APPLE_SPRING = {
   type: "spring" as const,
-  stiffness: 420,
-  damping: 28,
-  mass: 0.8,
+  stiffness: 440,
+  damping: 26,
+  mass: 0.75,
 };
 
 export function BottomTabBar() {
@@ -33,7 +33,7 @@ export function BottomTabBar() {
   }[] = [
     {
       id: "stocks",
-      label: "Assistant",
+      label: "Kora IA",
       icon: <Sparkles className="w-4 h-4" />,
     },
     {
@@ -52,63 +52,68 @@ export function BottomTabBar() {
     },
     {
       id: "analytics",
-      label: "Réglages",
+      label: "Analyses",
       icon: <SlidersHorizontal className="w-4 h-4" />,
     },
   ];
 
   return (
-    <nav
-      aria-label="Navigation principale"
-      className="fixed bottom-0 inset-x-0 z-40 backdrop-blur-2xl bg-white/75 border-t border-white/90 shadow-[0_-4px_24px_rgba(15,23,42,0.04)] pb-[env(safe-area-inset-bottom)]"
-    >
-      <div className="max-w-lg mx-auto px-3 h-16 grid grid-cols-5 items-center">
+    <div className="fixed bottom-3 inset-x-0 z-40 px-4 pointer-events-none pb-[env(safe-area-inset-bottom)]">
+      <nav
+        aria-label="Navigation principale"
+        className="pointer-events-auto max-w-md mx-auto h-16 px-2.5 rounded-full apple-titanium-card grid grid-cols-5 items-center shadow-[0_20px_50px_rgba(15,23,42,0.14)]"
+      >
         {leftTabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <motion.button
               key={tab.id}
-              whileTap={{ scale: 0.92 }}
+              whileHover={{ y: -2, scale: 1.05 }}
+              whileTap={{ scale: 0.9 }}
               transition={APPLE_SPRING}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-1 py-1.5 transition-colors",
+                "relative flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-full transition-colors",
                 isActive
                   ? "text-[#0071E3]"
-                  : "text-[#86868B] hover:text-[#1D1D1F]"
+                  : "text-[#64748B] hover:text-[#0F172A]"
               )}
             >
               {isActive && (
                 <motion.span
                   layoutId="bottomTabActiveGlow"
                   transition={APPLE_SPRING}
-                  className="absolute inset-x-3 inset-y-1 rounded-2xl bg-[#0071E3]/10 -z-10"
+                  className="absolute inset-x-2 inset-y-1 rounded-full bg-[#0071E3]/10 -z-10"
                 />
               )}
               <div className="relative">
                 {tab.icon}
                 {tab.badge !== undefined && (
-                  <span className="absolute -top-1.5 -right-2.5 min-w-[15px] h-3.5 px-1 rounded-full bg-[#0071E3] text-white text-[9px] font-bold flex items-center justify-center tabular-nums">
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1.5 -right-2.5 min-w-[15px] h-3.5 px-1 rounded-full bg-[#0071E3] text-white text-[9px] font-bold flex items-center justify-center tabular-nums shadow-xs"
+                  >
                     {tab.badge}
-                  </span>
+                  </motion.span>
                 )}
               </div>
-              <span className="text-[10px] font-medium tracking-tight">
+              <span className="text-[10px] font-semibold tracking-tight">
                 {tab.label}
               </span>
             </motion.button>
           );
         })}
 
-        {/* Central Apple Glass Action Button (+) */}
+        {/* Central Floating Action Sphere (+) */}
         <div className="flex items-center justify-center">
           <motion.button
-            whileTap={{ scale: 0.91 }}
-            whileHover={{ scale: 1.03 }}
+            whileHover={{ scale: 1.08, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
             transition={APPLE_SPRING}
             onClick={() => setQuickAddOpen(true)}
             aria-label="Ajout rapide"
-            className="w-11 h-11 rounded-2xl bg-gradient-to-b from-[#0077ED] to-[#0066CC] text-white shadow-md shadow-[#0071E3]/25 border border-white/40 flex items-center justify-center"
+            className="w-11 h-11 rounded-full bg-gradient-to-tr from-[#0F172A] via-[#1E293B] to-[#0071E3] text-white shadow-lg shadow-[#0071E3]/25 border border-white/50 flex items-center justify-center"
           >
             <Plus className="w-5 h-5 stroke-[2.4]" />
           </motion.button>
@@ -119,31 +124,32 @@ export function BottomTabBar() {
           return (
             <motion.button
               key={tab.id}
-              whileTap={{ scale: 0.92 }}
+              whileHover={{ y: -2, scale: 1.05 }}
+              whileTap={{ scale: 0.9 }}
               transition={APPLE_SPRING}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-1 py-1.5 transition-colors",
+                "relative flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-full transition-colors",
                 isActive
                   ? "text-[#0071E3]"
-                  : "text-[#86868B] hover:text-[#1D1D1F]"
+                  : "text-[#64748B] hover:text-[#0F172A]"
               )}
             >
               {isActive && (
                 <motion.span
                   layoutId="bottomTabActiveGlow"
                   transition={APPLE_SPRING}
-                  className="absolute inset-x-3 inset-y-1 rounded-2xl bg-[#0071E3]/10 -z-10"
+                  className="absolute inset-x-2 inset-y-1 rounded-full bg-[#0071E3]/10 -z-10"
                 />
               )}
               {tab.icon}
-              <span className="text-[10px] font-medium tracking-tight">
+              <span className="text-[10px] font-semibold tracking-tight">
                 {tab.label}
               </span>
             </motion.button>
           );
         })}
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
 }

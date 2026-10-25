@@ -14,6 +14,7 @@ import {
   Clock,
   Download,
   KeyRound,
+  Mic,
   RotateCcw,
   ShieldAlert,
   ShieldCheck,
@@ -176,11 +177,50 @@ export function VitalAgentCard() {
   const [tokenSavedFeedback, setTokenSavedFeedback] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [agentReply, setAgentReply] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatTurn[]>([]);
   const [lastAction, setLastAction] = useState<AgentActionType | null>(null);
   const [lastProvider, setLastProvider] = useState<string>("free-cloud-llm-20b");
   const [showHfDrawer, setShowHfDrawer] = useState(false);
+
+  const startVoiceDictation = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRec =
+      (window as unknown as Record<string, unknown>).SpeechRecognition ||
+      (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      setAgentReply(
+        "La dictée vocale est disponible sur Safari (iPhone/Mac) et Chrome."
+      );
+      return;
+    }
+    try {
+      const recognition = new (SpeechRec as new () => {
+        lang: string;
+        interimResults: boolean;
+        onstart: () => void;
+        onend: () => void;
+        onresult: (ev: {
+          results: { 0: { 0: { transcript: string } } };
+        }) => void;
+        start: () => void;
+      })();
+      recognition.lang = "fr-FR";
+      recognition.interimResults = false;
+      recognition.onstart = () => setIsListening(true);
+      recognition.onend = () => setIsListening(false);
+      recognition.onresult = (event) => {
+        const transcript = event?.results?.[0]?.[0]?.transcript || "";
+        if (transcript.trim()) {
+          sendToAgent(transcript.trim());
+        }
+      };
+      recognition.start();
+    } catch {
+      setIsListening(false);
+    }
+  };
 
   const totalFixed = useMemo(
     () => fixedExpenses.reduce((sum, f) => sum + f.amount, 0),
@@ -548,24 +588,24 @@ export function VitalAgentCard() {
             <motion.div
               animate={
                 isLoading
-                  ? { rotate: 360, scale: [1, 1.12, 1] }
-                  : { rotate: 0, scale: 1 }
+                  ? { rotate: 360, scale: [1, 1.14, 1] }
+                  : { rotate: 0, scale: [1, 1.04, 1] }
               }
               transition={
                 isLoading
                   ? { repeat: Infinity, duration: 2, ease: "linear" }
-                  : APPLE_SPRING
+                  : { repeat: Infinity, duration: 4.5, ease: "easeInOut" }
               }
-              className={`w-8 h-8 rounded-2xl flex items-center justify-center text-white shadow-md ${
+              className={`w-9 h-9 rounded-2xl flex items-center justify-center text-white shadow-md ${
                 activePersona === "finance"
-                  ? "bg-gradient-to-br from-[#0071E3] via-[#5856D6] to-[#AF52DE] shadow-[#0071E3]/25"
-                  : "bg-gradient-to-br from-[#10B981] via-[#059669] to-[#0071E3] shadow-emerald-500/25"
+                  ? "siri-orb shadow-[#0071E3]/30"
+                  : "bg-gradient-to-br from-[#10B981] via-[#059669] to-[#0071E3] shadow-emerald-500/30"
               }`}
             >
               {activePersona === "finance" ? (
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-4 h-4 drop-shadow-sm" />
               ) : (
-                <ChefHat className="w-4 h-4" />
+                <ChefHat className="w-4 h-4 drop-shadow-sm" />
               )}
             </motion.div>
             <div>
@@ -687,7 +727,7 @@ export function VitalAgentCard() {
 
         {/* Frosted Command Composer */}
         <form onSubmit={handleFormSubmit} className="mt-3.5 relative">
-          <div className="relative flex items-center rounded-2xl bg-white/90 border border-slate-200/90 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] focus-within:border-[#0071E3] focus-within:ring-4 focus-within:ring-[#0071E3]/12 transition-all">
+          <div className="relative flex items-center rounded-2xl bg-white/95 border border-slate-200/90 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] focus-within:border-[#0071E3] focus-within:ring-4 focus-within:ring-[#0071E3]/12 transition-all">
             <input
               type="text"
               value={input}
@@ -700,27 +740,47 @@ export function VitalAgentCard() {
                   ? "Demande à Kora Flow : « J'ai pas 400 mais 359€ », « Mets sur Google Agenda demain 18h »..."
                   : "Demande à Kora Chef : « Conseille mes courses de la semaine », « J'ai cuisiné 5 boîtes de curry »..."
               }
-              className="w-full bg-transparent pl-4 pr-12 py-3.5 text-xs sm:text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none disabled:opacity-40"
+              className="w-full bg-transparent pl-4 pr-22 py-3.5 text-xs sm:text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none disabled:opacity-40"
             />
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              whileHover={{ scale: 1.04 }}
-              transition={APPLE_SPRING}
-              type="submit"
-              disabled={isLoading || !input.trim() || killSwitchActive}
-              aria-label="Envoyer"
-              className={`absolute right-2 w-9 h-9 rounded-xl text-white disabled:opacity-30 flex items-center justify-center shadow-md transition-all ${
-                activePersona === "finance"
-                  ? "bg-gradient-to-b from-[#0077ED] to-[#0062CC] shadow-[#0071E3]/25"
-                  : "bg-gradient-to-b from-[#10B981] to-[#059669] shadow-emerald-500/25"
-              }`}
-            >
-              {isLoading ? (
-                <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              ) : (
-                <ArrowUp className="w-4 h-4 stroke-[2.5]" />
-              )}
-            </motion.button>
+            <div className="absolute right-2 flex items-center gap-1.5">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
+                transition={APPLE_SPRING}
+                type="button"
+                onClick={startVoiceDictation}
+                disabled={killSwitchActive || !envAgentEnabled}
+                aria-label="Dictée vocale"
+                title="Dicter à la voix (Français)"
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                  isListening
+                    ? "bg-red-500 text-white shadow-md shadow-red-500/30 animate-pulse"
+                    : "apple-glass-pill text-[#64748B] hover:text-[#0F172A]"
+                }`}
+              >
+                <Mic className="w-4 h-4" />
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
+                transition={APPLE_SPRING}
+                type="submit"
+                disabled={isLoading || !input.trim() || killSwitchActive}
+                aria-label="Envoyer"
+                className={`w-9 h-9 rounded-xl text-white disabled:opacity-30 flex items-center justify-center shadow-md transition-all ${
+                  activePersona === "finance"
+                    ? "bg-gradient-to-b from-[#0077ED] to-[#0062CC] shadow-[#0071E3]/25"
+                    : "bg-gradient-to-b from-[#10B981] to-[#059669] shadow-emerald-500/25"
+                }`}
+              >
+                {isLoading ? (
+                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : (
+                  <ArrowUp className="w-4 h-4 stroke-[2.5]" />
+                )}
+              </motion.button>
+            </div>
           </div>
         </form>
 
