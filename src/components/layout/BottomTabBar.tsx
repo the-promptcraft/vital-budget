@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { motion } from "framer-motion";
 import { useFinanceStore, ActiveTab } from "@/store/useFinanceStore";
 import {
   TrendingUp,
@@ -10,6 +11,13 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const APPLE_SPRING = {
+  type: "spring" as const,
+  stiffness: 420,
+  damping: 28,
+  mass: 0.8,
+};
 
 export function BottomTabBar() {
   const { activeTab, setActiveTab, setQuickAddOpen, groceryItems } =
@@ -25,12 +33,12 @@ export function BottomTabBar() {
   }[] = [
     {
       id: "stocks",
-      label: "Market",
+      label: "Budget",
       icon: <TrendingUp className="w-5 h-5" />,
     },
     {
       id: "groceries",
-      label: "Groceries",
+      label: "Courses",
       icon: <ShoppingBag className="w-5 h-5" />,
       badge: uncheckedCount > 0 ? uncheckedCount : undefined,
     },
@@ -39,12 +47,12 @@ export function BottomTabBar() {
   const rightTabs: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     {
       id: "batch",
-      label: "Batch Prep",
+      label: "Frigo & Batch",
       icon: <CookingPot className="w-5 h-5" />,
     },
     {
       id: "analytics",
-      label: "Analytics",
+      label: "Analyses",
       icon: <BarChart3 className="w-5 h-5" />,
     },
   ];
@@ -58,14 +66,23 @@ export function BottomTabBar() {
         {leftTabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
-            <button
+            <motion.button
               key={tab.id}
+              whileTap={{ scale: 0.91 }}
+              transition={APPLE_SPRING}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "relative flex flex-col items-center justify-center gap-1 py-1.5 transition-colors",
                 isActive ? "text-[#0A84FF]" : "text-zinc-400 hover:text-zinc-200"
               )}
             >
+              {isActive && (
+                <motion.span
+                  layoutId="bottomTabActiveGlow"
+                  transition={APPLE_SPRING}
+                  className="absolute inset-x-3 inset-y-1 rounded-2xl bg-[#0A84FF]/12 -z-10"
+                />
+              )}
               <div className="relative">
                 {tab.icon}
                 {tab.badge !== undefined && (
@@ -77,37 +94,49 @@ export function BottomTabBar() {
               <span className="text-[10px] font-medium tracking-tight">
                 {tab.label}
               </span>
-            </button>
+            </motion.button>
           );
         })}
 
         {/* Central Action Button (+) */}
         <div className="flex items-center justify-center">
-          <button
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.03 }}
+            transition={APPLE_SPRING}
             onClick={() => setQuickAddOpen(true)}
             aria-label="Quick Add"
-            className="w-12 h-12 -mt-4 rounded-2xl bg-gradient-to-tr from-[#0A84FF] to-[#30D158] text-white shadow-lg shadow-[#0A84FF]/30 border border-white/20 flex items-center justify-center active:scale-95 transition-transform"
+            className="w-12 h-12 -mt-4 rounded-2xl bg-gradient-to-tr from-[#0A84FF] to-[#30D158] text-white shadow-lg shadow-[#0A84FF]/30 border border-white/20 flex items-center justify-center"
           >
             <Plus className="w-6 h-6 stroke-[2.5]" />
-          </button>
+          </motion.button>
         </div>
 
         {rightTabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
-            <button
+            <motion.button
               key={tab.id}
+              whileTap={{ scale: 0.91 }}
+              transition={APPLE_SPRING}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 py-1.5 transition-colors",
+                "relative flex flex-col items-center justify-center gap-1 py-1.5 transition-colors",
                 isActive ? "text-[#0A84FF]" : "text-zinc-400 hover:text-zinc-200"
               )}
             >
+              {isActive && (
+                <motion.span
+                  layoutId="bottomTabActiveGlow"
+                  transition={APPLE_SPRING}
+                  className="absolute inset-x-3 inset-y-1 rounded-2xl bg-[#0A84FF]/12 -z-10"
+                />
+              )}
               {tab.icon}
               <span className="text-[10px] font-medium tracking-tight">
                 {tab.label}
               </span>
-            </button>
+            </motion.button>
           );
         })}
       </div>
