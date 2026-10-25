@@ -1,10 +1,25 @@
 {
   "name": "Kora — Wealth & Nutrition Intelligence",
   "short_name": "Kora",
-  "description": "Votre argent et votre assiette, pilotés en temps réel par deux agents IA.",
+  "description": "Votre argent et votre assiette, pilotés en temps réel par Kora Flow & Kora Chef.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#EEF1F7",
   "theme_color": "#EEF1F7",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/apple-icon",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
