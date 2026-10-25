@@ -2,19 +2,19 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VitalBudget — Stock-Style Personal Finance & Batch Cooking",
+  title: "VitalBudget — Assistant Personnel & Budget",
   description:
-    "Mobile-First PWA: Track your Disposable Income like a stock portfolio, optimize grocery unit prices (€/kg), and plan nutrient-dense Batch Cooking with automatic Use-By Dates.",
+    "Votre assistant financier et nutritionnel intelligent, design Apple Liquid Glass.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "VitalBudget",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#121214",
+  themeColor: "#F2F4F8",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -26,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-[#121214] text-[#F5F5F7] antialiased selection:bg-[#0A84FF]/30">
+    <html lang="fr">
+      <body className="min-h-screen bg-[#F2F4F8] text-[#1D1D1F] antialiased selection:bg-[#0071E3]/20">
         {children}
       </body>
     </html>

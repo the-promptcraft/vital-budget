@@ -19,6 +19,7 @@ import type {
   AgentContextPayload,
   AgentResponsePayload,
   AgentActionType,
+  ChatTurn,
 } from "@/app/api/agent/route";
 
 const DAILY_FREE_LIMIT = 40;
@@ -54,6 +55,7 @@ export function VitalAgentCard() {
     consumeBatchPortion,
     updateBudgetTargets,
     updateEnvelopeAllocation,
+    updateEnvelopeSpent,
   } = useFinanceStore();
 
   const envAgentEnabled =
@@ -100,8 +102,9 @@ export function VitalAgentCard() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [agentReply, setAgentReply] = useState<string | null>(null);
+  const [chatHistory, setChatHistory] = useState<ChatTurn[]>([]);
   const [lastAction, setLastAction] = useState<AgentActionType | null>(null);
-  const [lastProvider, setLastProvider] = useState<string>("local-smart-engine");
+  const [lastProvider, setLastProvider] = useState<string>("free-cloud-llm-20b");
   const [showHfDrawer, setShowHfDrawer] = useState(false);
 
   const totalFixed = useMemo(
@@ -123,10 +126,8 @@ export function VitalAgentCard() {
     (disposableLeft / remainingDays).toFixed(2)
   );
 
-  // Subtle Proactive Notification
   const smartNotifications = useMemo<SmartNotification[]>(() => {
     const list: SmartNotification[] = [];
-
     const readyMeal = batchMeals.find((m) => m.remainingPortions > 0);
     if (readyMeal) {
       const saved = (
@@ -135,12 +136,11 @@ export function VitalAgentCard() {
       list.push({
         id: `notif-meal-${readyMeal.id}`,
         title: `${readyMeal.remainingPortions} portions de ${readyMeal.title} au frigo`,
-        subtitle: `Économise ${saved} € ce soir en évitant une commande.`,
+        subtitle: `Économise ${saved} € ce soir.`,
         ctaLabel: "Déduire 1 portion",
         ctaCommand: `J'ai mangé 1 portion de ${readyMeal.title}`,
       });
     }
-
     return list;
   }, [batchMeals]);
 
@@ -154,7 +154,7 @@ export function VitalAgentCard() {
       setAgentReply("Kill Switch activé. L'agent est verrouillé (0,00 €).");
       setLastAction({ type: "NONE" });
     } else {
-      setAgentReply("Agent actif. Que veux-tu noter ou modifier ?");
+      setAgentReply("Agent actif. Dis-moi ce que tu veux modifier ou noter !");
     }
   };
 
@@ -179,15 +179,12 @@ export function VitalAgentCard() {
     } catch {}
   };
 
-  // Directly apply the agent's action to the app state
   const executeAgentAction = (action: AgentActionType) => {
     if (!action || action.type === "NONE") return;
 
     const todayYmd = new Date().toISOString().split("T")[0];
 
     if (action.type === "SET_DISPOSABLE_LEFT") {
-      // disposableLeft = monthlyIncome - totalFixed - savingsTarget - totalVariableSpent
-      // So to make disposableLeft === targetDisposable:
       const newRequiredIncome = Number(
         (
           action.targetDisposable +
@@ -197,6 +194,8 @@ export function VitalAgentCard() {
         ).toFixed(2)
       );
       updateBudgetTargets(newRequiredIncome, savingsTarget);
+    } else if (action.type === "SET_MONTHLY_INCOME") {
+      updateBudgetTargets(action.newIncome, savingsTarget);
     } else if (action.type === "UNDO_LAST_TRANSACTION") {
       deleteTransaction(action.txId);
     } else if (action.type === "ADD_EXPENSE") {
@@ -220,7 +219,12 @@ export function VitalAgentCard() {
     } else if (action.type === "UPDATE_SAVINGS_TARGET") {
       updateBudgetTargets(monthlyIncome, action.newSavingsTarget);
     } else if (action.type === "UPDATE_ENVELOPE_BUDGET") {
-      updateEnvelopeAllocation(action.envelopeId, action.newAllocated);
+      if (action.newAllocated !== undefined) {
+        updateEnvelopeAllocation(action.envelopeId, action.newAllocated);
+      }
+      if (action.newSpent !== undefined) {
+        updateEnvelopeSpent(action.envelopeId, action.newSpent);
+      }
     }
   };
 
@@ -285,6 +289,7 @@ export function VitalAgentCard() {
         body: JSON.stringify({
           message: trimmed,
           context: contextPayload,
+          history: chatHistory,
           hfToken: customHfToken,
           killSwitch: killSwitchActive,
         }),
@@ -295,6 +300,11 @@ export function VitalAgentCard() {
       setAgentReply(data.reply);
       setLastAction(data.action);
       setLastProvider(data.provider);
+      setChatHistory((prev) => [
+        ...prev.slice(-6),
+        { role: "user", content: trimmed },
+        { role: "assistant", content: data.reply },
+      ]);
 
       if (data.action && data.action.type !== "NONE") {
         executeAgentAction(data.action);
@@ -316,27 +326,37 @@ export function VitalAgentCard() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={APPLE_SPRING}
-      className="relative rounded-2xl bg-[#111114] border border-white/[0.08] p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_20px_40px_-15px_rgba(0,0,0,0.7)]"
+      className="apple-glass relative rounded-3xl p-4 sm:p-5 overflow-hidden"
     >
-      {/* Top Bar: Minimalist Vercel Header + Kill Switch */}
+      {/* Subtle Apple Intelligence Pastel Top Shimmer */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0071E3]/40 via-[#AF52DE]/40 to-[#34C759]/40"
+      />
+
+      {/* Top Bar: Apple Glass Status + Kill Switch */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400" />
-          <span className="text-xs font-medium text-zinc-200 tracking-tight">
-            Assistant Personnel
-          </span>
-          <span className="text-[11px] text-zinc-500 tabular-nums">
-            • {dailyCallsUsed}/{DAILY_FREE_LIMIT} aujourd&apos;hui
-          </span>
+          <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-[#0071E3] to-[#5856D6] text-white flex items-center justify-center shadow-xs">
+            <Sparkles className="w-3.5 h-3.5" />
+          </div>
+          <div>
+            <span className="text-xs font-semibold text-[#1D1D1F] tracking-tight">
+              Vital Intelligence
+            </span>
+            <span className="text-[11px] text-[#6E6E73] tabular-nums ml-1.5">
+              • {dailyCallsUsed}/{DAILY_FREE_LIMIT} entrées
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setShowHfDrawer(!showHfDrawer)}
-            className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] text-[11px] text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
+            className="apple-glass-pill px-2.5 py-1 rounded-full text-[11px] font-medium text-[#1D1D1F] hover:bg-white transition-colors flex items-center gap-1"
           >
-            <KeyRound className="w-3 h-3" />
+            <KeyRound className="w-3 h-3 text-[#0071E3]" />
             <span>
               {customHfToken.startsWith("hf_") ? "HF Connecté" : "Clé HF"}
             </span>
@@ -345,30 +365,30 @@ export function VitalAgentCard() {
           <button
             type="button"
             onClick={toggleKillSwitch}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1 border transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1 border transition-colors ${
               killSwitchActive || !envAgentEnabled
-                ? "bg-red-500/10 text-red-400 border-red-500/25"
-                : "bg-white/[0.04] text-zinc-300 border-white/[0.08] hover:bg-white/[0.08]"
+                ? "bg-red-500/10 text-red-600 border-red-500/20"
+                : "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 hover:bg-emerald-500/15"
             }`}
           >
             {killSwitchActive || !envAgentEnabled ? (
               <>
-                <ShieldAlert className="w-3 h-3 text-red-400" />
+                <ShieldAlert className="w-3 h-3 text-red-600" />
                 <span>Off</span>
               </>
             ) : (
               <>
-                <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                <span>Actif (0€)</span>
+                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                <span>100% Gratuit</span>
               </>
             )}
           </button>
         </div>
       </div>
 
-      {/* Vercel v0-Style Prompt Input Box */}
+      {/* Apple Frosted Glass Command Input */}
       <form onSubmit={handleFormSubmit} className="mt-3.5 relative">
-        <div className="relative flex items-center rounded-xl bg-[#09090B] border border-white/[0.1] focus-within:border-white/30 transition-colors">
+        <div className="relative flex items-center rounded-2xl bg-white/85 border border-black/[0.08] shadow-inner focus-within:border-[#0071E3] focus-within:ring-2 focus-within:ring-[#0071E3]/15 transition-all">
           <input
             type="text"
             value={input}
@@ -376,10 +396,10 @@ export function VitalAgentCard() {
             disabled={killSwitchActive || !envAgentEnabled}
             placeholder={
               killSwitchActive
-                ? "Assistant désactivé (Kill Switch actif)..."
-                : "Ex: « J'ai pas 400 mais 359€ », « Courses 22€ », « Mets sur Google Agenda... »"
+                ? "Assistant verrouillé (Kill Switch actif)..."
+                : "Parle librement : « J'ai pas 400 mais 359€ », « Courses 22€ », « Mets sur Google Agenda... »"
             }
-            className="w-full bg-transparent pl-3.5 pr-12 py-3 text-xs sm:text-sm text-white placeholder:text-zinc-500 focus:outline-none disabled:opacity-40"
+            className="w-full bg-transparent pl-4 pr-12 py-3 text-xs sm:text-sm text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none disabled:opacity-40"
           />
           <motion.button
             whileTap={{ scale: 0.92 }}
@@ -387,14 +407,18 @@ export function VitalAgentCard() {
             type="submit"
             disabled={isLoading || !input.trim() || killSwitchActive}
             aria-label="Envoyer à l'agent"
-            className="absolute right-2 w-8 h-8 rounded-lg bg-white text-black hover:bg-zinc-200 disabled:opacity-20 flex items-center justify-center transition-opacity"
+            className="absolute right-2 w-8 h-8 rounded-xl bg-[#0071E3] text-white hover:bg-[#0077ED] disabled:opacity-30 flex items-center justify-center shadow-sm shadow-[#0071E3]/25 transition-opacity"
           >
-            <ArrowUp className="w-4 h-4 stroke-[2.2]" />
+            {isLoading ? (
+              <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+            ) : (
+              <ArrowUp className="w-4 h-4 stroke-[2.4]" />
+            )}
           </motion.button>
         </div>
       </form>
 
-      {/* Quick Action Suggestions (Vercel Pill Style) */}
+      {/* Apple Glass Quick Suggestion Pills */}
       <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
         <motion.button
           whileTap={{ scale: 0.96 }}
@@ -402,9 +426,9 @@ export function VitalAgentCard() {
           onClick={() =>
             sendToAgent("Le dashboard est pas bon, j'ai pas 400 mais 359 eur")
           }
-          className="shrink-0 px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] text-[11px] text-zinc-300 transition-colors tabular-nums"
+          className="apple-glass-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium text-[#1D1D1F] hover:bg-white transition-colors tabular-nums"
         >
-          Corriger solde → 359 €
+          ✨ Corriger solde → 359 €
         </motion.button>
 
         <motion.button
@@ -413,9 +437,9 @@ export function VitalAgentCard() {
           onClick={() =>
             sendToAgent("Mets sur mon Google Agenda : Batch Cooking demain à 18h")
           }
-          className="shrink-0 px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] text-[11px] text-zinc-300 transition-colors flex items-center gap-1"
+          className="apple-glass-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium text-[#1D1D1F] hover:bg-white transition-colors flex items-center gap-1"
         >
-          <CalendarPlus className="w-3 h-3 text-zinc-400" />
+          <CalendarPlus className="w-3 h-3 text-[#0071E3]" />
           <span>Google Agenda</span>
         </motion.button>
 
@@ -423,41 +447,32 @@ export function VitalAgentCard() {
           whileTap={{ scale: 0.96 }}
           type="button"
           onClick={() => sendToAgent("Courses 22€ Lidl")}
-          className="shrink-0 px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] text-[11px] text-zinc-300 transition-colors tabular-nums"
+          className="apple-glass-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium text-[#1D1D1F] hover:bg-white transition-colors tabular-nums"
         >
-          +22 € Courses
+          🛒 +22 € Courses
         </motion.button>
 
         <motion.button
           whileTap={{ scale: 0.96 }}
           type="button"
           onClick={() => sendToAgent("J'ai mangé 1 portion du frigo")}
-          className="shrink-0 px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] text-[11px] text-zinc-300 transition-colors"
+          className="apple-glass-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium text-[#1D1D1F] hover:bg-white transition-colors"
         >
-          -1 Portion Frigo
+          🍲 -1 Portion Frigo
         </motion.button>
 
         <motion.button
           whileTap={{ scale: 0.96 }}
           type="button"
           onClick={() => sendToAgent("Annule la dernière dépense")}
-          className="shrink-0 px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] text-[11px] text-zinc-300 transition-colors flex items-center gap-1"
+          className="apple-glass-pill shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium text-[#1D1D1F] hover:bg-white transition-colors flex items-center gap-1"
         >
-          <RotateCcw className="w-3 h-3 text-zinc-400" />
+          <RotateCcw className="w-3 h-3 text-[#6E6E73]" />
           <span>Annuler dernière</span>
-        </motion.button>
-
-        <motion.button
-          whileTap={{ scale: 0.96 }}
-          type="button"
-          onClick={() => sendToAgent("Bilan du jour")}
-          className="shrink-0 px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] text-[11px] text-zinc-300 transition-colors"
-        >
-          Bilan du jour
         </motion.button>
       </div>
 
-      {/* Agent Reply & Action Card (Incl. 1-Click Google Agenda Button) */}
+      {/* Agent Reply Bubble (Frosted Glass) */}
       <AnimatePresence mode="wait">
         {agentReply && (
           <motion.div
@@ -466,32 +481,32 @@ export function VitalAgentCard() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={APPLE_SPRING}
-            className="mt-3.5 p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-2.5"
+            className="mt-3.5 p-3.5 rounded-2xl bg-white/85 border border-black/[0.06] shadow-xs space-y-2.5"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-2.5">
-                <Sparkles className="w-4 h-4 text-zinc-300 mt-0.5 shrink-0" />
-                <p className="text-xs sm:text-[13px] text-zinc-100 leading-relaxed">
+                <Sparkles className="w-4 h-4 text-[#0071E3] mt-0.5 shrink-0" />
+                <p className="text-xs sm:text-[13px] text-[#1D1D1F] leading-relaxed">
                   {agentReply}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setAgentReply(null)}
-                className="text-zinc-500 hover:text-white p-0.5"
+                className="text-[#86868B] hover:text-[#1D1D1F] p-0.5"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* If Google Calendar Event was generated, show 1-click Google Agenda button */}
+            {/* 1-Click Google Calendar Button */}
             {lastAction && lastAction.type === "CREATE_CALENDAR_EVENT" && (
-              <div className="pt-1 flex items-center justify-between gap-2 p-2.5 rounded-lg bg-[#09090B] border border-white/[0.08]">
+              <div className="pt-1 flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#F2F4F8] border border-black/[0.06]">
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-white truncate">
+                  <p className="text-xs font-semibold text-[#1D1D1F] truncate">
                     {lastAction.title}
                   </p>
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-[#6E6E73]">
                     {lastAction.dateLabel}
                   </p>
                 </div>
@@ -499,7 +514,7 @@ export function VitalAgentCard() {
                   href={lastAction.googleCalendarUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 px-3 py-1.5 rounded-lg bg-white text-black hover:bg-zinc-200 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                  className="shrink-0 px-3 py-1.5 rounded-xl bg-[#0071E3] text-white hover:bg-[#0077ED] text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
                 >
                   <CalendarPlus className="w-3.5 h-3.5" />
                   <span>Ouvrir Google Agenda</span>
@@ -507,15 +522,17 @@ export function VitalAgentCard() {
               </div>
             )}
 
-            {/* Confirmation badge for other store modifications */}
+            {/* Confirmation badge for store modifications */}
             {lastAction &&
               lastAction.type !== "NONE" &&
               lastAction.type !== "CREATE_CALENDAR_EVENT" && (
-                <div className="flex items-center justify-between text-[11px] text-emerald-400 pt-0.5">
+                <div className="flex items-center justify-between text-[11px] text-emerald-700 font-medium pt-0.5">
                   <span className="flex items-center gap-1.5 tabular-nums">
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
                     {lastAction.type === "SET_DISPOSABLE_LEFT" &&
                       `Reste à vivre ajusté à ${formatEUR(lastAction.targetDisposable)}`}
+                    {lastAction.type === "SET_MONTHLY_INCOME" &&
+                      `Revenu mensuel ajusté à ${formatEUR(lastAction.newIncome)}`}
                     {lastAction.type === "UNDO_LAST_TRANSACTION" &&
                       `Supprimé : ${lastAction.txLabel} (${formatEUR(lastAction.txAmount)})`}
                     {lastAction.type === "ADD_EXPENSE" &&
@@ -526,11 +543,15 @@ export function VitalAgentCard() {
                       `-1 portion (${lastAction.mealTitle}) • +${formatEUR(lastAction.savedAmount)} économisés`}
                     {lastAction.type === "UPDATE_SAVINGS_TARGET" &&
                       `Épargne ajustée à ${formatEUR(lastAction.newSavingsTarget)}`}
+                    {lastAction.type === "UPDATE_ENVELOPE_BUDGET" &&
+                      `Enveloppe ${lastAction.envelopeName} mise à jour`}
                   </span>
-                  <span className="text-[10px] text-zinc-500">
+                  <span className="text-[10px] text-[#86868B]">
                     {lastProvider === "huggingface-qwen2.5"
                       ? "Qwen 2.5 HF"
-                      : "Moteur instantané"}
+                      : lastProvider === "free-cloud-llm-20b"
+                      ? "LLM 20B Gratuit"
+                      : "Moteur local"}
                   </span>
                 </div>
               )}
@@ -538,25 +559,23 @@ export function VitalAgentCard() {
         )}
       </AnimatePresence>
 
-      {/* Subtle Proactive Suggestion Strip */}
+      {/* Proactive Suggestion Strip */}
       <AnimatePresence>
         {smartNotifications.length > 0 && !agentReply && !killSwitchActive && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between gap-2"
+            className="mt-3 pt-3 border-t border-black/[0.06] flex items-center justify-between gap-2"
           >
-            <p className="text-[11px] text-zinc-400 truncate">
-              💡 {smartNotifications[0].title} —{" "}
-              <span className="text-zinc-500">
-                {smartNotifications[0].subtitle}
-              </span>
+            <p className="text-[11px] text-[#6E6E73] truncate">
+              💡 <strong className="text-[#1D1D1F]">{smartNotifications[0].title}</strong> —{" "}
+              {smartNotifications[0].subtitle}
             </p>
             <button
               type="button"
               onClick={() => sendToAgent(smartNotifications[0].ctaCommand)}
-              className="shrink-0 text-[11px] font-medium text-white hover:underline"
+              className="shrink-0 text-[11px] font-semibold text-[#0071E3] hover:underline"
             >
               {smartNotifications[0].ctaLabel} →
             </button>
@@ -564,7 +583,7 @@ export function VitalAgentCard() {
         )}
       </AnimatePresence>
 
-      {/* Hugging Face Token Drawer (Optional) */}
+      {/* Hugging Face Token Drawer */}
       <AnimatePresence>
         {showHfDrawer && (
           <motion.div
@@ -572,24 +591,17 @@ export function VitalAgentCard() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={APPLE_SPRING}
-            className="mt-3.5 pt-3.5 border-t border-white/[0.07] overflow-hidden space-y-2.5 text-xs"
+            className="mt-3.5 pt-3.5 border-t border-black/[0.06] overflow-hidden space-y-2.5 text-xs"
           >
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
-              <strong>Comment marche la connexion Hugging Face ?</strong> Par
-              défaut, l&apos;assistant fonctionne immédiatement sans compte grâce
-              au moteur intégré. Si tu veux activer le modèle{" "}
-              <code className="text-zinc-200">Qwen/Qwen2.5-7B-Instruct</code>{" "}
-              hébergé gratuitement par Hugging Face, crée un token gratuit (sans
-              carte bancaire) sur{" "}
-              <a
-                href="https://huggingface.co/settings/tokens"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white underline"
-              >
-                huggingface.co/settings/tokens
-              </a>{" "}
-              et colle-le ici :
+            <p className="text-[11px] text-[#6E6E73] leading-relaxed">
+              <strong className="text-[#1D1D1F]">
+                Vrai LLM 20B Gratuit déjà actif !
+              </strong>{" "}
+              L&apos;assistant utilise dès maintenant un grand modèle de langage
+              20B 100% gratuit sans clé. Si tu souhaites utiliser{" "}
+              <code className="text-[#0071E3]">Qwen/Qwen2.5-7B-Instruct</code>{" "}
+              via ton propre compte Hugging Face, colle ton token gratuit{" "}
+              <code className="text-[#1D1D1F]">hf_...</code> ci-dessous :
             </p>
             <form onSubmit={handleSaveToken} className="flex gap-2">
               <input
@@ -597,11 +609,11 @@ export function VitalAgentCard() {
                 value={customHfToken}
                 onChange={(e) => setCustomHfToken(e.target.value)}
                 placeholder="hf_xxxxxxxxxxxxxxxxxxxx"
-                className="flex-1 px-3 py-1.5 rounded-lg bg-[#09090B] border border-white/[0.1] text-xs text-white font-mono focus:outline-none focus:border-white/30"
+                className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-black/[0.1] text-xs text-[#1D1D1F] font-mono focus:outline-none focus:border-[#0071E3]"
               />
               <button
                 type="submit"
-                className="px-3 py-1.5 rounded-lg bg-white text-black hover:bg-zinc-200 font-medium text-xs transition-colors"
+                className="px-3.5 py-1.5 rounded-xl bg-[#0071E3] text-white hover:bg-[#0077ED] font-semibold text-xs transition-colors"
               >
                 {tokenSavedFeedback ? "Enregistré ✓" : "Connecter"}
               </button>

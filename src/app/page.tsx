@@ -23,19 +23,23 @@ export default function HomePage() {
 
   if (!isHydrated) {
     return (
-      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+      <div className="min-h-screen bg-[#F2F4F8] flex items-center justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-[#0071E3]/25 border-t-[#0071E3] animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen bg-[#09090B] text-[#FAFAFA] flex flex-col overflow-x-hidden">
-      {/* Vercel-style subtle ambient top radial spotlight */}
+    <div className="relative min-h-screen bg-[#F2F4F8] text-[#1D1D1F] flex flex-col overflow-x-hidden">
+      {/* Apple Liquid Glass Ambient Pastel Mesh Orbs */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-x-0 top-0 h-80 bg-[radial-gradient(ellipse_70%_50%_at_50%_-15%,rgba(255,255,255,0.09),transparent)] z-0"
-      />
+        className="pointer-events-none fixed inset-0 overflow-hidden z-0"
+      >
+        <div className="absolute -top-24 -left-20 w-96 h-96 rounded-full bg-[#0071E3]/12 blur-3xl" />
+        <div className="absolute top-28 -right-24 w-80 h-80 rounded-full bg-[#34C759]/12 blur-3xl" />
+        <div className="absolute bottom-24 left-1/4 w-96 h-96 rounded-full bg-[#AF52DE]/10 blur-3xl" />
+      </div>
 
       <Header />
 

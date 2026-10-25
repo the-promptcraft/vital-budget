@@ -60,7 +60,7 @@ export function BottomTabBar() {
   return (
     <nav
       aria-label="Navigation principale"
-      className="fixed bottom-0 inset-x-0 z-40 backdrop-blur-2xl bg-[#09090B]/85 border-t border-white/[0.07] pb-[env(safe-area-inset-bottom)]"
+      className="fixed bottom-0 inset-x-0 z-40 backdrop-blur-2xl bg-white/75 border-t border-white/90 shadow-[0_-4px_24px_rgba(15,23,42,0.04)] pb-[env(safe-area-inset-bottom)]"
     >
       <div className="max-w-lg mx-auto px-3 h-16 grid grid-cols-5 items-center">
         {leftTabs.map((tab) => {
@@ -73,20 +73,22 @@ export function BottomTabBar() {
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "relative flex flex-col items-center justify-center gap-1 py-1.5 transition-colors",
-                isActive ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+                isActive
+                  ? "text-[#0071E3]"
+                  : "text-[#86868B] hover:text-[#1D1D1F]"
               )}
             >
               {isActive && (
                 <motion.span
                   layoutId="bottomTabActiveGlow"
                   transition={APPLE_SPRING}
-                  className="absolute inset-x-3 inset-y-1 rounded-xl bg-white/[0.07] -z-10"
+                  className="absolute inset-x-3 inset-y-1 rounded-2xl bg-[#0071E3]/10 -z-10"
                 />
               )}
               <div className="relative">
                 {tab.icon}
                 {tab.badge !== undefined && (
-                  <span className="absolute -top-1.5 -right-2.5 min-w-[15px] h-3.5 px-1 rounded-full bg-white text-black text-[9px] font-bold flex items-center justify-center tabular-nums">
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[15px] h-3.5 px-1 rounded-full bg-[#0071E3] text-white text-[9px] font-bold flex items-center justify-center tabular-nums">
                     {tab.badge}
                   </span>
                 )}
@@ -98,7 +100,7 @@ export function BottomTabBar() {
           );
         })}
 
-        {/* Central Minimalist Vercel Action Button (+) */}
+        {/* Central Apple Glass Action Button (+) */}
         <div className="flex items-center justify-center">
           <motion.button
             whileTap={{ scale: 0.91 }}
@@ -106,9 +108,9 @@ export function BottomTabBar() {
             transition={APPLE_SPRING}
             onClick={() => setQuickAddOpen(true)}
             aria-label="Ajout rapide"
-            className="w-10 h-10 rounded-full bg-white text-black hover:bg-zinc-200 shadow-[0_0_25px_rgba(255,255,255,0.2)] flex items-center justify-center"
+            className="w-11 h-11 rounded-2xl bg-gradient-to-b from-[#0077ED] to-[#0066CC] text-white shadow-md shadow-[#0071E3]/25 border border-white/40 flex items-center justify-center"
           >
-            <Plus className="w-5 h-5 stroke-[2.2]" />
+            <Plus className="w-5 h-5 stroke-[2.4]" />
           </motion.button>
         </div>
 
@@ -122,14 +124,16 @@ export function BottomTabBar() {
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "relative flex flex-col items-center justify-center gap-1 py-1.5 transition-colors",
-                isActive ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+                isActive
+                  ? "text-[#0071E3]"
+                  : "text-[#86868B] hover:text-[#1D1D1F]"
               )}
             >
               {isActive && (
                 <motion.span
                   layoutId="bottomTabActiveGlow"
                   transition={APPLE_SPRING}
-                  className="absolute inset-x-3 inset-y-1 rounded-xl bg-white/[0.07] -z-10"
+                  className="absolute inset-x-3 inset-y-1 rounded-2xl bg-[#0071E3]/10 -z-10"
                 />
               )}
               {tab.icon}
