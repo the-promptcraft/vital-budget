@@ -435,20 +435,20 @@ export function BatchCookingView() {
       )}
 
       {/* HERO: COST PER PORTION, USE-BY DATE (DLC) & FRIDGE STOCK */}
-      <section className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-5 shadow-xl">
+      <section className="rounded-3xl apple-glass border border-black/[0.07] p-5 shadow-xl">
         <div className="flex items-start justify-between gap-2">
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider text-[#30D158]">
               AUTO USE-BY DATE (DLC) & EVENING PLANNER
             </span>
-            <h2 className="text-xl font-bold text-white mt-0.5">
+            <h2 className="text-xl font-bold text-[#1D1D1F] mt-0.5">
               Batch Cooking & Fridge Stock
             </h2>
           </div>
 
           <button
             onClick={() => setShowBuilder(!showBuilder)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#0A84FF] text-white text-xs font-semibold shadow-md shadow-[#0A84FF]/20 hover:opacity-95 transition shrink-0"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#0A84FF] text-[#1D1D1F] text-xs font-semibold shadow-md shadow-[#0A84FF]/20 hover:opacity-95 transition shrink-0"
           >
             <Plus className="w-4 h-4" />
             Log Cooked Batch
@@ -456,31 +456,31 @@ export function BatchCookingView() {
         </div>
 
         <div className="grid grid-cols-3 gap-2.5 mt-4">
-          <div className="rounded-2xl bg-[#121214] border border-white/[0.06] p-3">
-            <span className="text-[10px] text-zinc-400 uppercase block">
+          <div className="rounded-2xl bg-white/70 border border-black/[0.07] p-3">
+            <span className="text-[10px] text-[#6E6E73] uppercase block">
               Avg Cost
             </span>
             <span className="text-lg font-bold text-[#30D158] tabular-nums mt-0.5 block">
               {formatEUR(summary.avgCostPerPortion)}
             </span>
-            <span className="text-[10px] text-zinc-500">per portion</span>
+            <span className="text-[10px] text-[#86868B]">per portion</span>
           </div>
 
-          <div className="rounded-2xl bg-[#121214] border border-white/[0.06] p-3">
-            <span className="text-[10px] text-zinc-400 uppercase block">
+          <div className="rounded-2xl bg-white/70 border border-black/[0.07] p-3">
+            <span className="text-[10px] text-[#6E6E73] uppercase block">
               Fridge Stock
             </span>
             <span className="text-lg font-bold text-[#64D2FF] tabular-nums mt-0.5 block">
               {summary.totalPortionsInFridge} meals
             </span>
-            <span className="text-[10px] text-zinc-500">ready to eat</span>
+            <span className="text-[10px] text-[#86868B]">ready to eat</span>
           </div>
 
-          <div className="rounded-2xl bg-[#121214] border border-white/[0.06] p-3">
-            <span className="text-[10px] text-zinc-400 uppercase block">
+          <div className="rounded-2xl bg-white/70 border border-black/[0.07] p-3">
+            <span className="text-[10px] text-[#6E6E73] uppercase block">
               Total Saved
             </span>
-            <span className="text-lg font-bold text-white tabular-nums mt-0.5 block">
+            <span className="text-lg font-bold text-[#1D1D1F] tabular-nums mt-0.5 block">
               +{formatEUR(summary.totalSavingsGenerated)}
             </span>
             <span className="text-[10px] text-[#30D158]">vs eating out</span>
@@ -492,10 +492,10 @@ export function BatchCookingView() {
       {showBuilder && (
         <form
           onSubmit={handleCreateRecipe}
-          className="rounded-3xl bg-[#1C1C1E] border border-[#0A84FF]/40 p-5 space-y-4 shadow-2xl"
+          className="rounded-3xl apple-glass border border-[#0A84FF]/40 p-5 space-y-4 shadow-2xl"
         >
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[#1D1D1F] flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#64D2FF]" />
               Log a Cooked Batch Meal
             </h3>
@@ -505,14 +505,14 @@ export function BatchCookingView() {
           </div>
 
           {/* Segmented Mode: 2-Click Express vs Full Recipe */}
-          <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-[#121214] border border-white/[0.06]">
+          <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-white/70 border border-black/[0.07]">
             <button
               type="button"
               onClick={() => setBuilderMode("express")}
               className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition ${
                 builderMode === "express"
-                  ? "bg-[#2C2C2E] text-[#30D158] shadow"
-                  : "text-zinc-400"
+                  ? "bg-black/[0.04] text-[#30D158] shadow"
+                  : "text-[#6E6E73]"
               }`}
             >
               <Zap className="w-3.5 h-3.5" />
@@ -523,8 +523,8 @@ export function BatchCookingView() {
               onClick={() => setBuilderMode("complet")}
               className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition ${
                 builderMode === "complet"
-                  ? "bg-[#2C2C2E] text-[#64D2FF] shadow"
-                  : "text-zinc-400"
+                  ? "bg-black/[0.04] text-[#64D2FF] shadow"
+                  : "text-[#6E6E73]"
               }`}
             >
               <ChefHat className="w-3.5 h-3.5" />
@@ -537,7 +537,7 @@ export function BatchCookingView() {
               type="text"
               value={emoji}
               onChange={(e) => setEmoji(e.target.value)}
-              className="rounded-xl bg-[#2C2C2E] border border-white/[0.08] text-center py-2.5 text-lg"
+              className="rounded-xl bg-black/[0.04] border border-black/[0.07] text-center py-2.5 text-lg"
             />
             <input
               type="text"
@@ -545,22 +545,22 @@ export function BatchCookingView() {
               placeholder="e.g., Pasta Bolognese, Chicken Curry, Chili..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="col-span-3 rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2.5 text-sm text-white"
+              className="col-span-3 rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2.5 text-sm text-[#1D1D1F]"
             />
           </div>
 
           {/* Automatic Use-By Date (DLC) Banner */}
-          <div className="rounded-2xl bg-[#121214] border border-[#64D2FF]/30 p-3 flex items-center justify-between gap-3">
+          <div className="rounded-2xl bg-white/70 border border-[#64D2FF]/30 p-3 flex items-center justify-between gap-3">
             <div>
               <span className="text-[11px] font-semibold text-[#64D2FF] flex items-center gap-1.5">
                 ⏳ Auto Use-By Date (DLC): +{effectiveShelfLifeDays} days in fridge
               </span>
-              <p className="text-[10px] text-zinc-400 mt-0.5">
+              <p className="text-[10px] text-[#6E6E73] mt-0.5">
                 {liveDetectedDlc.reason}
               </p>
             </div>
             <div className="shrink-0">
-              <label className="block text-[9px] text-zinc-500 text-right mb-0.5">
+              <label className="block text-[9px] text-[#86868B] text-right mb-0.5">
                 Override (d)
               </label>
               <input
@@ -570,7 +570,7 @@ export function BatchCookingView() {
                 placeholder={String(liveDetectedDlc.days)}
                 value={customShelfLife}
                 onChange={(e) => setCustomShelfLife(e.target.value)}
-                className="w-16 rounded-xl bg-[#2C2C2E] border border-white/[0.1] px-2.5 py-1 text-xs font-bold text-white text-center tabular-nums"
+                className="w-16 rounded-xl bg-black/[0.04] border border-white/[0.1] px-2.5 py-1 text-xs font-bold text-[#1D1D1F] text-center tabular-nums"
               />
             </div>
           </div>
@@ -579,7 +579,7 @@ export function BatchCookingView() {
             <div className="space-y-2.5">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] text-zinc-400 mb-1">
+                  <label className="block text-[11px] text-[#6E6E73] mb-1">
                     Number of Portions Cooked
                   </label>
                   <input
@@ -588,11 +588,11 @@ export function BatchCookingView() {
                     max={15}
                     value={portions}
                     onChange={(e) => setPortions(e.target.value)}
-                    className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2.5 text-sm font-bold text-white tabular-nums"
+                    className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2.5 text-sm font-bold text-[#1D1D1F] tabular-nums"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-zinc-400 mb-1">
+                  <label className="block text-[11px] text-[#6E6E73] mb-1">
                     Total Batch Cost (€)
                   </label>
                   <input
@@ -600,7 +600,7 @@ export function BatchCookingView() {
                     step="0.1"
                     value={expressTotalCost}
                     onChange={(e) => setExpressTotalCost(e.target.value)}
-                    className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2.5 text-sm font-bold text-[#30D158] tabular-nums"
+                    className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2.5 text-sm font-bold text-[#30D158] tabular-nums"
                   />
                 </div>
               </div>
@@ -608,7 +608,7 @@ export function BatchCookingView() {
               <button
                 type="button"
                 onClick={handleSyncPricesFromReceipt}
-                className="w-full py-2 px-3 rounded-xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-[11px] font-medium text-[#64D2FF] flex items-center justify-center gap-1.5 transition"
+                className="w-full py-2 px-3 rounded-xl bg-black/[0.04] hover:bg-[#3A3A3C] text-[11px] font-medium text-[#64D2FF] flex items-center justify-center gap-1.5 transition"
               >
                 🔄 Calculate cost using my latest scanned receipt prices
               </button>
@@ -617,7 +617,7 @@ export function BatchCookingView() {
             <>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-[10px] text-zinc-400 mb-1">
+                  <label className="block text-[10px] text-[#6E6E73] mb-1">
                     Portions
                   </label>
                   <input
@@ -626,22 +626,22 @@ export function BatchCookingView() {
                     max={15}
                     value={portions}
                     onChange={(e) => setPortions(e.target.value)}
-                    className="w-full rounded-xl bg-[#2C2C2E] px-3 py-2 text-xs text-white tabular-nums"
+                    className="w-full rounded-xl bg-black/[0.04] px-3 py-2 text-xs text-[#1D1D1F] tabular-nums"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-zinc-400 mb-1">
+                  <label className="block text-[10px] text-[#6E6E73] mb-1">
                     Time (min)
                   </label>
                   <input
                     type="number"
                     value={prepTime}
                     onChange={(e) => setPrepTime(e.target.value)}
-                    className="w-full rounded-xl bg-[#2C2C2E] px-3 py-2 text-xs text-white tabular-nums"
+                    className="w-full rounded-xl bg-black/[0.04] px-3 py-2 text-xs text-[#1D1D1F] tabular-nums"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-zinc-400 mb-1">
+                  <label className="block text-[10px] text-[#6E6E73] mb-1">
                     Takeout Equiv. (€)
                   </label>
                   <input
@@ -649,14 +649,14 @@ export function BatchCookingView() {
                     step="0.5"
                     value={externalPrice}
                     onChange={(e) => setExternalPrice(e.target.value)}
-                    className="w-full rounded-xl bg-[#2C2C2E] px-3 py-2 text-xs text-white tabular-nums"
+                    className="w-full rounded-xl bg-black/[0.04] px-3 py-2 text-xs text-[#1D1D1F] tabular-nums"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-medium text-zinc-300">
+                  <span className="text-[11px] font-medium text-[#3A3A3C]">
                     Batch Ingredients
                   </span>
                   <div className="flex items-center gap-3">
@@ -687,7 +687,7 @@ export function BatchCookingView() {
                         copy[idx].name = e.target.value;
                         setIngredients(copy);
                       }}
-                      className="col-span-3 rounded-xl bg-[#2C2C2E] px-2.5 py-1.5 text-xs text-white"
+                      className="col-span-3 rounded-xl bg-black/[0.04] px-2.5 py-1.5 text-xs text-[#1D1D1F]"
                     />
                     <input
                       type="text"
@@ -698,7 +698,7 @@ export function BatchCookingView() {
                         copy[idx].quantityLabel = e.target.value;
                         setIngredients(copy);
                       }}
-                      className="col-span-1 rounded-xl bg-[#2C2C2E] px-2 py-1.5 text-xs text-white tabular-nums"
+                      className="col-span-1 rounded-xl bg-black/[0.04] px-2 py-1.5 text-xs text-[#1D1D1F] tabular-nums"
                     />
                     <input
                       type="number"
@@ -710,38 +710,38 @@ export function BatchCookingView() {
                         copy[idx].cost = e.target.value;
                         setIngredients(copy);
                       }}
-                      className="col-span-2 rounded-xl bg-[#2C2C2E] px-2.5 py-1.5 text-xs text-white tabular-nums"
+                      className="col-span-2 rounded-xl bg-black/[0.04] px-2.5 py-1.5 text-xs text-[#1D1D1F] tabular-nums"
                     />
                   </div>
                 ))}
               </div>
 
               <div>
-                <label className="block text-[11px] text-zinc-400 mb-1">
+                <label className="block text-[11px] text-[#6E6E73] mb-1">
                   Cooking Steps (1 step per line)
                 </label>
                 <textarea
                   rows={3}
                   value={stepsInput}
                   onChange={(e) => setStepsInput(e.target.value)}
-                  className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] p-3 text-xs text-white"
+                  className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] p-3 text-xs text-[#1D1D1F]"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] text-zinc-400 mb-1">
+                <label className="block text-[11px] text-[#6E6E73] mb-1">
                   Key Vitamins & Minerals (comma-separated)
                 </label>
                 <input
                   type="text"
                   value={vitaminsInput}
                   onChange={(e) => setVitaminsInput(e.target.value)}
-                  className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3 py-2 text-xs text-white"
+                  className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3 py-2 text-xs text-[#1D1D1F]"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] text-zinc-400 mb-1.5">
+                <label className="block text-[11px] text-[#6E6E73] mb-1.5">
                   Veggie Sub-Families Included
                 </label>
                 <div className="flex flex-wrap gap-1.5">
@@ -755,7 +755,7 @@ export function BatchCookingView() {
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition ${
                           active
                             ? "bg-[#30D158]/20 border-[#30D158] text-[#30D158]"
-                            : "bg-[#2C2C2E] border-transparent text-zinc-400"
+                            : "bg-black/[0.04] border-transparent text-[#6E6E73]"
                         }`}
                       >
                         {sf}
@@ -780,17 +780,17 @@ export function BatchCookingView() {
       {/* =====================================================================
           EVENING MEAL PLANNER + GOOGLE CALENDAR + SKIP EATING OUT
          ===================================================================== */}
-      <section className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-5 space-y-3.5 shadow-xl">
+      <section className="rounded-3xl apple-glass border border-black/[0.07] p-5 space-y-3.5 shadow-xl">
         <div className="flex items-start justify-between gap-2">
           <div>
             <span className="text-[10px] font-mono uppercase tracking-wider text-[#0A84FF]">
               GOOGLE CALENDAR & ZERO-WASTE FIFO SCHEDULE
             </span>
-            <h3 className="text-sm font-bold text-white flex items-center gap-1.5 mt-0.5">
+            <h3 className="text-sm font-bold text-[#1D1D1F] flex items-center gap-1.5 mt-0.5">
               <Calendar className="w-4 h-4 text-[#0A84FF]" />
               Evening Meal Schedule (Shortest Use-By First)
             </h3>
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-[#6E6E73]">
               Tap &ldquo;🍽️ Eating Out&rdquo; on any night you go to a restaurant: your batch meal automatically skips that night and shifts to the next day.
             </p>
           </div>
@@ -829,15 +829,15 @@ export function BatchCookingView() {
                     ? "bg-[#FF9F0A]/10 border-[#FF9F0A]/35"
                     : slot.isAfterDlc
                     ? "bg-[#FF453A]/10 border-[#FF453A]/40"
-                    : "bg-[#121214] border-white/[0.06]"
+                    : "bg-white/70 border-black/[0.07]"
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-16 shrink-0">
-                    <span className="text-xs font-bold text-white block">
+                    <span className="text-xs font-bold text-[#1D1D1F] block">
                       {slot.dayLabel}
                     </span>
-                    <span className="text-[10px] text-zinc-500">8:00 PM</span>
+                    <span className="text-[10px] text-[#86868B]">8:00 PM</span>
                   </div>
 
                   {slot.isResto ? (
@@ -845,7 +845,7 @@ export function BatchCookingView() {
                       <span className="text-xs font-semibold text-[#FF9F0A] flex items-center gap-1">
                         🍽️ Eating Out / Restaurant Night
                       </span>
-                      <span className="text-[10px] text-zinc-400 block">
+                      <span className="text-[10px] text-[#6E6E73] block">
                         Batch meal automatically skipped & shifted to tomorrow night
                       </span>
                     </div>
@@ -853,7 +853,7 @@ export function BatchCookingView() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span>{slot.assignedMeal.emoji}</span>
-                        <span className="text-xs font-semibold text-white truncate">
+                        <span className="text-xs font-semibold text-[#1D1D1F] truncate">
                           {slot.assignedMeal.title}
                         </span>
                       </div>
@@ -866,7 +866,7 @@ export function BatchCookingView() {
                           className={`text-[10px] font-medium ${
                             slot.isAfterDlc
                               ? "text-[#FF453A] font-bold"
-                              : "text-zinc-400"
+                              : "text-[#6E6E73]"
                           }`}
                         >
                           {slot.isAfterDlc
@@ -876,7 +876,7 @@ export function BatchCookingView() {
                       </div>
                     </div>
                   ) : (
-                    <span className="text-xs text-zinc-500 italic">
+                    <span className="text-xs text-[#86868B] italic">
                       No portions left — Cook a new Batch below
                     </span>
                   )}
@@ -889,7 +889,7 @@ export function BatchCookingView() {
                       href={gcalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2.5 py-1.5 rounded-xl bg-[#2C2C2E] hover:bg-[#0A84FF] text-[11px] font-medium text-zinc-200 hover:text-white transition flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-xl bg-black/[0.04] hover:bg-[#0A84FF] text-[11px] font-medium text-[#1D1D1F] hover:text-[#1D1D1F] transition flex items-center gap-1"
                       title="Add this dinner to Google Calendar"
                     >
                       <CalendarPlus className="w-3.5 h-3.5" />
@@ -903,7 +903,7 @@ export function BatchCookingView() {
                     className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition flex items-center gap-1 ${
                       slot.isResto
                         ? "bg-[#FF9F0A] text-[#121214]"
-                        : "bg-[#2C2C2E] text-zinc-300 hover:text-white"
+                        : "bg-black/[0.04] text-[#3A3A3C] hover:text-[#1D1D1F]"
                     }`}
                     title="Mark as Restaurant night to skip & shift your Batch meal"
                   >
@@ -933,19 +933,19 @@ export function BatchCookingView() {
           return (
             <article
               key={meal.id}
-              className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-5 space-y-3.5 shadow-lg"
+              className="rounded-3xl apple-glass border border-black/[0.07] p-5 space-y-3.5 shadow-lg"
             >
               {/* Top Row */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#2C2C2E] flex items-center justify-center text-2xl shrink-0">
+                  <div className="w-12 h-12 rounded-2xl bg-black/[0.04] flex items-center justify-center text-2xl shrink-0">
                     {meal.emoji}
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white leading-snug">
+                    <h3 className="text-sm font-bold text-[#1D1D1F] leading-snug">
                       {meal.title}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-zinc-400 tabular-nums">
+                    <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-[#6E6E73] tabular-nums">
                       <span className="inline-flex items-center gap-1">
                         <Clock className="w-3 h-3 text-[#0A84FF]" />
                         {meal.prepTimeMinutes} min
@@ -965,7 +965,7 @@ export function BatchCookingView() {
                     {formatEUR(meal.costPerPortion)}
                     <span className="text-[10px] font-normal">/portion</span>
                   </div>
-                  <span className="text-[10px] text-zinc-400 tabular-nums block mt-0.5">
+                  <span className="text-[10px] text-[#6E6E73] tabular-nums block mt-0.5">
                     Total: {formatEUR(meal.totalCost)}
                   </span>
                 </div>
@@ -1004,7 +1004,7 @@ export function BatchCookingView() {
                   className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold flex items-center gap-1 shrink-0 transition ${
                     meal.isFrozen
                       ? "bg-[#64D2FF] text-[#121214]"
-                      : "bg-[#121214]/80 text-[#64D2FF] hover:bg-[#121214]"
+                      : "bg-white/70 text-[#64D2FF] hover:bg-white/70"
                   }`}
                   title="Freeze or unfreeze this meal (extends Use-By Date to +90 days)"
                 >
@@ -1032,7 +1032,7 @@ export function BatchCookingView() {
                   onClick={() =>
                     setExpandedStepsId(isExpanded ? null : meal.id)
                   }
-                  className="flex-1 flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-xs font-medium text-white transition"
+                  className="flex-1 flex items-center justify-between px-3.5 py-2 rounded-xl bg-black/[0.04] hover:bg-[#3A3A3C] text-xs font-medium text-[#1D1D1F] transition"
                 >
                   <span className="flex items-center gap-1.5">
                     <ChefHat className="w-3.5 h-3.5 text-[#64D2FF]" />
@@ -1041,9 +1041,9 @@ export function BatchCookingView() {
                       : "View Step-by-Step Recipe"}
                   </span>
                   {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-zinc-400" />
+                    <ChevronUp className="w-4 h-4 text-[#6E6E73]" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-zinc-400" />
+                    <ChevronDown className="w-4 h-4 text-[#6E6E73]" />
                   )}
                 </button>
 
@@ -1060,10 +1060,10 @@ export function BatchCookingView() {
 
               {/* Collapsible Panel: Ingredients + Step-by-Step Instructions */}
               {isExpanded && (
-                <div className="rounded-2xl bg-[#121214] border border-white/[0.07] p-3.5 space-y-3">
+                <div className="rounded-2xl bg-white/70 border border-white/[0.07] p-3.5 space-y-3">
                   <div>
-                    <div className="flex items-center justify-between text-[11px] text-zinc-400 pb-1.5 border-b border-white/[0.06]">
-                      <span className="flex items-center gap-1 font-semibold text-zinc-200">
+                    <div className="flex items-center justify-between text-[11px] text-[#6E6E73] pb-1.5 border-b border-black/[0.07]">
+                      <span className="flex items-center gap-1 font-semibold text-[#1D1D1F]">
                         <Utensils className="w-3 h-3 text-[#30D158]" />
                         Ingredients ({meal.totalPortions} portions)
                       </span>
@@ -1075,15 +1075,15 @@ export function BatchCookingView() {
                       {meal.ingredients.map((ing, i) => (
                         <div
                           key={i}
-                          className="flex items-center justify-between text-xs text-zinc-300"
+                          className="flex items-center justify-between text-xs text-[#3A3A3C]"
                         >
                           <span className="truncate">
                             • {ing.name}{" "}
-                            <span className="text-zinc-500">
+                            <span className="text-[#86868B]">
                               ({ing.quantityLabel})
                             </span>
                           </span>
-                          <span className="font-mono text-zinc-400 tabular-nums ml-2">
+                          <span className="font-mono text-[#6E6E73] tabular-nums ml-2">
                             {formatEUR(ing.cost)}
                           </span>
                         </div>
@@ -1092,7 +1092,7 @@ export function BatchCookingView() {
                   </div>
 
                   {meal.steps && meal.steps.length > 0 && (
-                    <div className="pt-2 border-t border-white/[0.06]">
+                    <div className="pt-2 border-t border-black/[0.07]">
                       <p className="text-[11px] font-semibold text-[#64D2FF] mb-2 flex items-center gap-1.5">
                         <ChefHat className="w-3.5 h-3.5" />
                         Step-by-Step Preparation:
@@ -1101,9 +1101,9 @@ export function BatchCookingView() {
                         {meal.steps.map((step, idx) => (
                           <li
                             key={idx}
-                            className="text-xs text-zinc-300 leading-relaxed flex items-start gap-2"
+                            className="text-xs text-[#3A3A3C] leading-relaxed flex items-start gap-2"
                           >
-                            <span className="w-4 h-4 rounded-full bg-[#2C2C2E] text-[10px] font-mono font-bold text-[#30D158] flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="w-4 h-4 rounded-full bg-black/[0.04] text-[10px] font-mono font-bold text-[#30D158] flex items-center justify-center shrink-0 mt-0.5">
                               {idx + 1}
                             </span>
                             <span>{step}</span>
@@ -1119,15 +1119,15 @@ export function BatchCookingView() {
               <div className="pt-1 flex items-center justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-zinc-300 flex items-center gap-1.5 font-medium">
+                    <span className="text-[#3A3A3C] flex items-center gap-1.5 font-medium">
                       <Refrigerator className="w-3.5 h-3.5 text-[#64D2FF]" />
                       Fridge Stock:
                     </span>
-                    <span className="font-bold text-white tabular-nums">
+                    <span className="font-bold text-[#1D1D1F] tabular-nums">
                       {meal.remainingPortions} / {meal.totalPortions} portions
                     </span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-[#2C2C2E] overflow-hidden">
+                  <div className="w-full h-2 rounded-full bg-black/[0.04] overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
@@ -1147,7 +1147,7 @@ export function BatchCookingView() {
                   <button
                     onClick={() => consumeBatchPortion(meal.id)}
                     disabled={meal.remainingPortions === 0}
-                    className="flex items-center gap-1 px-3 py-2 rounded-xl bg-[#2C2C2E] hover:bg-[#3A3A3C] disabled:opacity-40 text-white text-xs font-semibold transition active:scale-95 tabular-nums"
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl bg-black/[0.04] hover:bg-[#3A3A3C] disabled:opacity-40 text-[#1D1D1F] text-xs font-semibold transition active:scale-95 tabular-nums"
                   >
                     <Minus className="w-3.5 h-3.5 text-[#FF9F0A]" />1 portion
                   </button>
@@ -1163,7 +1163,7 @@ export function BatchCookingView() {
                   <button
                     onClick={() => deleteBatchMeal(meal.id)}
                     title="Delete recipe"
-                    className="p-2 rounded-xl bg-[#2C2C2E] text-zinc-400 hover:text-[#FF453A] transition"
+                    className="p-2 rounded-xl bg-black/[0.04] text-[#6E6E73] hover:text-[#FF453A] transition"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -1175,14 +1175,14 @@ export function BatchCookingView() {
       </div>
 
       {/* RECIPE IDEAS CATALOG (1-CLICK COOK) */}
-      <section className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-5 space-y-3.5">
+      <section className="rounded-3xl apple-glass border border-black/[0.07] p-5 space-y-3.5">
         <div className="flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-[#30D158]" />
           <div>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-[#1D1D1F]">
               Batch Recipe Catalog (Bolognese, Chili, Frittata...)
             </h3>
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-[#6E6E73]">
               Tap &ldquo;+ Cook Batch&rdquo; to add it to your fridge with automatic Use-By Date tracking
             </p>
           </div>
@@ -1195,16 +1195,16 @@ export function BatchCookingView() {
             return (
               <div
                 key={idx}
-                className="rounded-2xl bg-[#121214] border border-white/[0.07] p-3.5 flex flex-col gap-2.5"
+                className="rounded-2xl bg-white/70 border border-white/[0.07] p-3.5 flex flex-col gap-2.5"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
                     <span className="text-2xl">{idea.emoji}</span>
                     <div>
-                      <h4 className="text-xs font-bold text-white">
+                      <h4 className="text-xs font-bold text-[#1D1D1F]">
                         {idea.title}
                       </h4>
-                      <p className="text-[11px] text-zinc-400 tabular-nums">
+                      <p className="text-[11px] text-[#6E6E73] tabular-nums">
                         {idea.totalPortions} portions • Use-By {dlcDays}d •{" "}
                         <strong className="text-[#30D158]">
                           {formatEUR(idea.costPerPortion)}/portion

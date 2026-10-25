@@ -173,10 +173,10 @@ export function GroceriesView() {
               <ScanLine className="w-3.5 h-3.5" />
               OCR RECEIPT SCANNER & REAL PRICES
             </span>
-            <h2 className="text-lg font-bold text-white mt-0.5">
+            <h2 className="text-lg font-bold text-[#1D1D1F] mt-0.5">
               Scan Grocery Receipt
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[#6E6E73] mt-0.5">
               Automatically logs your grocery spend and updates real ingredient prices for your Batch Cooking recipes.
             </p>
           </div>
@@ -192,13 +192,13 @@ export function GroceriesView() {
         </div>
 
         {showScanner && (
-          <div className="mt-4 pt-4 border-t border-white/[0.08] space-y-3.5">
+          <div className="mt-4 pt-4 border-t border-black/[0.07] space-y-3.5">
             <div className="px-3 py-2 rounded-xl bg-[#30D158]/10 border border-[#30D158]/25 text-[11px] text-[#30D158] flex items-center justify-between">
               <span>🔒 Zero-Photo Storage: Receipt image is read in RAM and immediately discarded.</span>
               <span className="font-mono font-bold">0 KB saved</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <label className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-[#2C2C2E] hover:bg-[#3A3A3C] border border-white/[0.1] text-xs font-semibold text-white cursor-pointer transition">
+              <label className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-black/[0.04] hover:bg-[#3A3A3C] border border-white/[0.1] text-xs font-semibold text-[#1D1D1F] cursor-pointer transition">
                 <Camera className="w-4 h-4 text-[#0A84FF]" />
                 {isScanningImage
                   ? "Scanning receipt image..."
@@ -217,13 +217,13 @@ export function GroceriesView() {
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
                 placeholder="Store Name (e.g., Lidl, Whole Foods, Aldi)"
-                className="rounded-2xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2 text-xs text-white"
+                className="rounded-2xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2 text-xs text-[#1D1D1F]"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-zinc-400 flex items-center gap-1">
+                <span className="text-[11px] text-[#6E6E73] flex items-center gap-1">
                   <FileText className="w-3 h-3 text-[#64D2FF]" />
                   Detected Receipt Lines (supports English & French receipts):
                 </span>
@@ -239,14 +239,14 @@ export function GroceriesView() {
                 rows={5}
                 value={receiptText}
                 onChange={(e) => setReceiptText(e.target.value)}
-                className="w-full rounded-2xl bg-[#121214] border border-white/[0.08] p-3 font-mono text-xs text-zinc-200 focus:outline-none focus:border-[#0A84FF]"
+                className="w-full rounded-2xl bg-white/70 border border-black/[0.07] p-3 font-mono text-xs text-[#1D1D1F] focus:outline-none focus:border-[#0A84FF]"
               />
             </div>
 
             {/* Live Preview of Extracted Items */}
-            <div className="rounded-2xl bg-[#121214] border border-white/[0.06] p-3 space-y-2">
-              <div className="flex items-center justify-between text-xs border-b border-white/[0.06] pb-2">
-                <span className="text-zinc-300 font-semibold">
+            <div className="rounded-2xl bg-white/70 border border-black/[0.07] p-3 space-y-2">
+              <div className="flex items-center justify-between text-xs border-b border-black/[0.07] pb-2">
+                <span className="text-[#3A3A3C] font-semibold">
                   {parsedReceiptItems.length} items automatically parsed
                 </span>
                 <span className="text-[#30D158] font-bold tabular-nums">
@@ -262,8 +262,8 @@ export function GroceriesView() {
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span>{it.emoji}</span>
-                      <span className="text-white truncate">{it.name}</span>
-                      <span className="text-[10px] text-zinc-500 tabular-nums">
+                      <span className="text-[#1D1D1F] truncate">{it.name}</span>
+                      <span className="text-[10px] text-[#86868B] tabular-nums">
                         (€{calculateUnitPrice(it.price, it.quantity)}/{it.unit})
                       </span>
                     </div>
@@ -278,7 +278,7 @@ export function GroceriesView() {
             <button
               type="button"
               onClick={handleConfirmReceiptScan}
-              className="w-full py-3 rounded-2xl bg-[#0A84FF] hover:bg-[#0A84FF]/90 text-white font-bold text-xs shadow-lg shadow-[#0A84FF]/25 transition"
+              className="w-full py-3 rounded-2xl bg-[#0A84FF] hover:bg-[#0A84FF]/90 text-[#1D1D1F] font-bold text-xs shadow-lg shadow-[#0A84FF]/25 transition"
             >
               ✅ Confirm Receipt ({formatEUR(parsedReceiptTotal)}) & Sync Batch Prices
             </button>
@@ -287,13 +287,13 @@ export function GroceriesView() {
       </section>
 
       {/* BASKET QUALITY GAUGE: WHOLE FOODS VS EXTRAS */}
-      <section className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-5 shadow-xl">
+      <section className="rounded-3xl apple-glass border border-black/[0.07] p-5 shadow-xl">
         <div className="flex items-center justify-between mb-2">
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider text-[#64D2FF]">
               NUTRIENT DENSITY & UNIT PRICE INDEX
             </span>
-            <h2 className="text-xl font-bold text-white mt-0.5">
+            <h2 className="text-xl font-bold text-[#1D1D1F] mt-0.5">
               Grocery Basket Quality
             </h2>
           </div>
@@ -301,13 +301,13 @@ export function GroceriesView() {
             <span className="text-2xl font-bold text-[#30D158] tabular-nums">
               {basketStats.rawPct}%
             </span>
-            <span className="block text-[10px] text-zinc-400">
+            <span className="block text-[10px] text-[#6E6E73]">
               Whole Foods
             </span>
           </div>
         </div>
 
-        <div className="w-full h-3 rounded-full bg-[#2C2C2E] overflow-hidden flex my-3">
+        <div className="w-full h-3 rounded-full bg-black/[0.04] overflow-hidden flex my-3">
           <div
             className="h-full bg-gradient-to-r from-[#30D158] to-[#64D2FF] transition-all"
             style={{ width: `${basketStats.rawPct}%` }}
@@ -319,22 +319,22 @@ export function GroceriesView() {
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-center mt-3">
-          <div className="rounded-2xl bg-[#121214] p-2.5 border border-white/[0.06]">
-            <span className="text-[10px] text-zinc-400 block">Cart Total</span>
-            <span className="text-sm font-bold text-white tabular-nums">
+          <div className="rounded-2xl bg-white/70 p-2.5 border border-black/[0.07]">
+            <span className="text-[10px] text-[#6E6E73] block">Cart Total</span>
+            <span className="text-sm font-bold text-[#1D1D1F] tabular-nums">
               {formatEUR(basketStats.total)}
             </span>
           </div>
-          <div className="rounded-2xl bg-[#121214] p-2.5 border border-white/[0.06]">
-            <span className="text-[10px] text-zinc-400 block">
+          <div className="rounded-2xl bg-white/70 p-2.5 border border-black/[0.07]">
+            <span className="text-[10px] text-[#6E6E73] block">
               Whole & Vitamins
             </span>
             <span className="text-sm font-bold text-[#30D158] tabular-nums">
               {formatEUR(basketStats.rawHealthyTotal)}
             </span>
           </div>
-          <div className="rounded-2xl bg-[#121214] p-2.5 border border-white/[0.06]">
-            <span className="text-[10px] text-zinc-400 block">Avg / Kg</span>
+          <div className="rounded-2xl bg-white/70 p-2.5 border border-black/[0.07]">
+            <span className="text-[10px] text-[#6E6E73] block">Avg / Kg</span>
             <span className="text-sm font-bold text-[#64D2FF] tabular-nums">
               {formatEUR(basketStats.avgPricePerKg)}/kg
             </span>
@@ -343,11 +343,11 @@ export function GroceriesView() {
       </section>
 
       {/* IN-STORE EXPRESS UNIT PRICE CALCULATOR (€/KG) */}
-      <section className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-4">
+      <section className="rounded-3xl apple-glass border border-black/[0.07] p-4">
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
             <Scale className="w-4 h-4 text-[#0A84FF]" />
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#1D1D1F]">
               In-Store Unit Price Calculator (€/kg)
             </h3>
           </div>
@@ -357,40 +357,40 @@ export function GroceriesView() {
         </div>
 
         <div className="grid grid-cols-2 gap-2.5">
-          <div className="flex items-center justify-between rounded-xl bg-[#2C2C2E] px-3 py-2">
-            <span className="text-xs text-zinc-400">Shelf Tag (€)</span>
+          <div className="flex items-center justify-between rounded-xl bg-black/[0.04] px-3 py-2">
+            <span className="text-xs text-[#6E6E73]">Shelf Tag (€)</span>
             <input
               type="number"
               step="0.01"
               value={calcPrice}
               onChange={(e) => setCalcPrice(e.target.value)}
-              className="w-20 text-right bg-transparent text-sm font-bold text-white tabular-nums focus:outline-none"
+              className="w-20 text-right bg-transparent text-sm font-bold text-[#1D1D1F] tabular-nums focus:outline-none"
             />
           </div>
-          <div className="flex items-center justify-between rounded-xl bg-[#2C2C2E] px-3 py-2">
-            <span className="text-xs text-zinc-400">Net Weight (g)</span>
+          <div className="flex items-center justify-between rounded-xl bg-black/[0.04] px-3 py-2">
+            <span className="text-xs text-[#6E6E73]">Net Weight (g)</span>
             <input
               type="number"
               step="10"
               value={calcWeightGrams}
               onChange={(e) => setCalcWeightGrams(e.target.value)}
-              className="w-20 text-right bg-transparent text-sm font-bold text-white tabular-nums focus:outline-none"
+              className="w-20 text-right bg-transparent text-sm font-bold text-[#1D1D1F] tabular-nums focus:outline-none"
             />
           </div>
         </div>
       </section>
 
       {/* 1-TAP HEALTHY STAPLES GRID */}
-      <section className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-5">
+      <section className="rounded-3xl apple-glass border border-black/[0.07] p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-[#30D158]" />
-              <h3 className="text-sm font-semibold text-white">
+              <h3 className="text-sm font-semibold text-[#1D1D1F]">
                 1-Tap Budget & Vitamin Staples
               </h3>
             </div>
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-[#6E6E73]">
               Tap any whole food staple to add it with your last paid price
             </p>
           </div>
@@ -403,8 +403,8 @@ export function GroceriesView() {
               onClick={() => setSelectedFamily(fam)}
               className={`px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition ${
                 selectedFamily === fam
-                  ? "bg-[#0A84FF] text-white"
-                  : "bg-[#2C2C2E] text-zinc-300 hover:text-white"
+                  ? "bg-[#0A84FF] text-[#1D1D1F]"
+                  : "bg-black/[0.04] text-[#3A3A3C] hover:text-[#1D1D1F]"
               }`}
             >
               {fam}
@@ -422,7 +422,7 @@ export function GroceriesView() {
               <button
                 key={staple.id}
                 onClick={() => addStapleToGroceries(staple)}
-                className="group text-left rounded-2xl bg-[#121214] hover:bg-[#2C2C2E] border border-white/[0.07] hover:border-[#30D158]/40 p-3 transition active:scale-[0.98]"
+                className="group text-left rounded-2xl bg-white/70 hover:bg-black/[0.04] border border-white/[0.07] hover:border-[#30D158]/40 p-3 transition active:scale-[0.98]"
               >
                 <div className="flex items-start justify-between">
                   <span className="text-xl">{staple.emoji}</span>
@@ -430,10 +430,10 @@ export function GroceriesView() {
                     {formatEUR(staple.defaultPrice)}
                   </span>
                 </div>
-                <p className="text-xs font-semibold text-white mt-1.5 line-clamp-1">
+                <p className="text-xs font-semibold text-[#1D1D1F] mt-1.5 line-clamp-1">
                   {staple.name}
                 </p>
-                <p className="text-[10px] text-zinc-400 tabular-nums mt-0.5">
+                <p className="text-[10px] text-[#6E6E73] tabular-nums mt-0.5">
                   {formatEUR(unitPrice)}/{staple.unit} • Score{" "}
                   {staple.nutriDensity}
                 </p>
@@ -454,13 +454,13 @@ export function GroceriesView() {
       </section>
 
       {/* ACTIVE SHOPPING LIST & INFLATION TRACKER */}
-      <section className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-5">
+      <section className="rounded-3xl apple-glass border border-black/[0.07] p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-[#1D1D1F]">
               Shopping Cart ({groceryItems.length} items)
             </h3>
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-[#6E6E73]">
               Automatic unit price & inflation check vs historical baseline
             </p>
           </div>
@@ -468,7 +468,7 @@ export function GroceriesView() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setQuickAddOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#2C2C2E] text-xs text-zinc-200 hover:text-white"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-black/[0.04] text-xs text-[#1D1D1F] hover:text-[#1D1D1F]"
             >
               <PlusCircle className="w-3.5 h-3.5 text-[#0A84FF]" />
               Custom
@@ -496,8 +496,8 @@ export function GroceriesView() {
                 key={item.id}
                 className={`p-3 rounded-2xl border transition flex items-center justify-between gap-3 ${
                   item.checked
-                    ? "bg-[#121214]/60 border-white/[0.04] opacity-75"
-                    : "bg-[#121214] border-white/[0.08]"
+                    ? "bg-white/70 border-white/[0.04] opacity-75"
+                    : "bg-white/70 border-black/[0.07]"
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -506,7 +506,7 @@ export function GroceriesView() {
                     className={`w-6 h-6 rounded-lg flex items-center justify-center border transition shrink-0 ${
                       item.checked
                         ? "bg-[#30D158] border-[#30D158] text-[#121214]"
-                        : "border-zinc-600 bg-[#2C2C2E]"
+                        : "border-zinc-600 bg-black/[0.04]"
                     }`}
                   >
                     {item.checked && <Check className="w-4 h-4 stroke-[3]" />}
@@ -518,16 +518,16 @@ export function GroceriesView() {
                     <p
                       className={`text-xs font-semibold truncate ${
                         item.checked
-                          ? "line-through text-zinc-400"
-                          : "text-white"
+                          ? "line-through text-[#6E6E73]"
+                          : "text-[#1D1D1F]"
                       }`}
                     >
                       {item.name}
                     </p>
                     <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                      <span className="text-[10px] text-zinc-400 tabular-nums">
+                      <span className="text-[10px] text-[#6E6E73] tabular-nums">
                         {item.quantity} {item.unit} •{" "}
-                        <strong className="text-zinc-200">
+                        <strong className="text-[#1D1D1F]">
                           {formatEUR(item.pricePerUnit)}/{item.unit}
                         </strong>
                       </span>
@@ -566,12 +566,12 @@ export function GroceriesView() {
                 </div>
 
                 <div className="flex items-center gap-2.5 shrink-0">
-                  <span className="text-sm font-bold text-white tabular-nums">
+                  <span className="text-sm font-bold text-[#1D1D1F] tabular-nums">
                     {formatEUR(item.price)}
                   </span>
                   <button
                     onClick={() => removeGroceryItem(item.id)}
-                    className="text-zinc-500 hover:text-[#FF453A] p-1"
+                    className="text-[#86868B] hover:text-[#FF453A] p-1"
                     title="Remove item"
                   >
                     <Trash2 className="w-4 h-4" />
