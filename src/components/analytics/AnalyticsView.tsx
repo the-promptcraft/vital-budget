@@ -210,16 +210,16 @@ export function AnalyticsView() {
   return (
     <div className="space-y-5 pb-24">
       {/* RADAR OF 4 VEGETABLE SUB-FAMILIES */}
-      <section className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-5 shadow-xl">
+      <section className="rounded-3xl apple-glass border border-black/[0.07] p-5 shadow-xl">
         <div className="flex items-start justify-between mb-2">
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider text-[#64D2FF]">
               MICRONUTRIENT SYNERGY • PREVENTIVE HEALTH
             </span>
-            <h2 className="text-lg font-bold text-white mt-0.5">
+            <h2 className="text-lg font-bold text-[#1D1D1F] mt-0.5">
               4 Vegetable Sub-Families Radar
             </h2>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-[#6E6E73]">
               Combined coverage across your Grocery Basket and Batch Cooking meals
             </p>
           </div>
@@ -262,10 +262,10 @@ export function AnalyticsView() {
           {radarData.map((item) => (
             <div
               key={item.subject}
-              className="rounded-2xl bg-[#121214] border border-white/[0.06] p-3"
+              className="rounded-2xl bg-white/70 border border-black/[0.07] p-3"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white">
+                <span className="text-xs font-semibold text-[#1D1D1F]">
                   {item.subject}
                 </span>
                 <span
@@ -280,21 +280,21 @@ export function AnalyticsView() {
                   {item.score}%
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-400 mt-1">{item.benefits}</p>
+              <p className="text-[10px] text-[#6E6E73] mt-1">{item.benefits}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* TOP COST-EFFECTIVE NUTRIENT STAPLES (€/KG) */}
-      <section className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-5">
+      <section className="rounded-3xl apple-glass border border-black/[0.07] p-5">
         <div className="flex items-center gap-2 mb-3">
           <Award className="w-4 h-4 text-[#30D158]" />
           <div>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-[#1D1D1F]">
               Top Cost-Effective Whole Foods (€/kg)
             </h3>
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-[#6E6E73]">
               Lowest unit price per kilogram with highest vitamin & mineral density
             </p>
           </div>
@@ -304,18 +304,18 @@ export function AnalyticsView() {
           {topCostEffectiveProducts.map((prod, index) => (
             <div
               key={prod.id}
-              className="flex items-center justify-between p-3 rounded-2xl bg-[#121214] border border-white/[0.06]"
+              className="flex items-center justify-between p-3 rounded-2xl bg-white/70 border border-black/[0.07]"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className="w-6 h-6 rounded-full bg-[#2C2C2E] text-xs font-mono font-bold text-[#30D158] flex items-center justify-center shrink-0 tabular-nums">
+                <span className="w-6 h-6 rounded-full bg-black/[0.04] text-xs font-mono font-bold text-[#30D158] flex items-center justify-center shrink-0 tabular-nums">
                   #{index + 1}
                 </span>
                 <span className="text-xl shrink-0">{prod.emoji}</span>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-white truncate">
+                  <p className="text-xs font-semibold text-[#1D1D1F] truncate">
                     {prod.name}
                   </p>
-                  <p className="text-[10px] text-zinc-400 truncate">
+                  <p className="text-[10px] text-[#6E6E73] truncate">
                     {prod.vitamins.join(" • ")}
                   </p>
                 </div>
@@ -335,14 +335,14 @@ export function AnalyticsView() {
       </section>
 
       {/* DATA PORTABILITY (JSON & CSV EXPORT/IMPORT + WIPE DEMO) */}
-      <section className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-5 space-y-3">
+      <section className="rounded-3xl apple-glass border border-black/[0.07] p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Database className="w-4 h-4 text-[#0A84FF]" />
           <div>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-[#1D1D1F]">
               Data Portability & Reset Controls
             </h3>
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-[#6E6E73]">
               All changes are automatically persisted in LocalStorage (0 photo bytes stored)
             </p>
           </div>
@@ -357,7 +357,7 @@ export function AnalyticsView() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <button
             onClick={handleExportJSON}
-            className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-xs font-medium text-white transition"
+            className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-black/[0.04] hover:bg-[#3A3A3C] text-xs font-medium text-[#1D1D1F] transition"
           >
             <Download className="w-3.5 h-3.5 text-[#0A84FF]" />
             Export JSON
@@ -365,13 +365,13 @@ export function AnalyticsView() {
 
           <button
             onClick={handleExportCSV}
-            className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-xs font-medium text-white transition"
+            className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-black/[0.04] hover:bg-[#3A3A3C] text-xs font-medium text-[#1D1D1F] transition"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-[#30D158]" />
             Export CSV
           </button>
 
-          <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-xs font-medium text-white cursor-pointer transition">
+          <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-black/[0.04] hover:bg-[#3A3A3C] text-xs font-medium text-[#1D1D1F] cursor-pointer transition">
             <Upload className="w-3.5 h-3.5 text-[#64D2FF]" />
             Import JSON
             <input
@@ -387,7 +387,7 @@ export function AnalyticsView() {
               resetToSeedData();
               setStatusMessage("Demo seed data restored.");
             }}
-            className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-[#2C2C2E] hover:bg-[#3A3A3C] text-xs font-medium text-zinc-300 transition"
+            className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl bg-black/[0.04] hover:bg-[#3A3A3C] text-xs font-medium text-[#3A3A3C] transition"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Restore Demo
@@ -409,15 +409,15 @@ export function AnalyticsView() {
       </section>
 
       {/* SUPABASE CLOUD SYNC CONFIGURATION */}
-      <section className="rounded-3xl bg-[#1C1C1E] border border-white/[0.08] p-5">
+      <section className="rounded-3xl apple-glass border border-black/[0.07] p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Cloud className="w-4 h-4 text-[#30D158]" />
             <div>
-              <h3 className="text-sm font-semibold text-white">
+              <h3 className="text-sm font-semibold text-[#1D1D1F]">
                 Supabase Cloud Sync (Optional)
               </h3>
-              <p className="text-[11px] text-zinc-400">
+              <p className="text-[11px] text-[#6E6E73]">
                 Instant LocalStorage persistence + optional PostgreSQL sync (`supabase/schema.sql`)
               </p>
             </div>
@@ -430,7 +430,7 @@ export function AnalyticsView() {
 
         <form onSubmit={handleSaveSupabaseConfig} className="space-y-3">
           <div>
-            <label className="block text-[11px] text-zinc-400 mb-1">
+            <label className="block text-[11px] text-[#6E6E73] mb-1">
               NEXT_PUBLIC_SUPABASE_URL
             </label>
             <input
@@ -438,12 +438,12 @@ export function AnalyticsView() {
               placeholder="https://xyzcompany.supabase.co"
               value={supabaseUrl}
               onChange={(e) => setSupabaseUrl(e.target.value)}
-              className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2 text-xs text-white"
+              className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2 text-xs text-[#1D1D1F]"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] text-zinc-400 mb-1">
+            <label className="block text-[11px] text-[#6E6E73] mb-1">
               NEXT_PUBLIC_SUPABASE_ANON_KEY
             </label>
             <input
@@ -451,12 +451,12 @@ export function AnalyticsView() {
               placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
               value={supabaseKey}
               onChange={(e) => setSupabaseKey(e.target.value)}
-              className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2 text-xs text-white"
+              className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2 text-xs text-[#1D1D1F]"
             />
           </div>
 
           <div className="flex items-center justify-between pt-1">
-            <span className="text-[11px] text-zinc-500 tabular-nums">
+            <span className="text-[11px] text-[#86868B] tabular-nums">
               {lastSyncedAt
                 ? `Last synced: ${new Date(lastSyncedAt).toLocaleTimeString(
                     "en-US"
@@ -465,7 +465,7 @@ export function AnalyticsView() {
             </span>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-[#0A84FF] text-white text-xs font-semibold hover:opacity-95 transition"
+              className="px-4 py-2 rounded-xl bg-[#0A84FF] text-[#1D1D1F] text-xs font-semibold hover:opacity-95 transition"
             >
               Test & Sync
             </button>

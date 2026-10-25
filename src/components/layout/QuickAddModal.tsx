@@ -175,7 +175,7 @@ export function QuickAddModal() {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="fixed bottom-0 inset-x-0 z-50 max-w-lg mx-auto rounded-t-3xl bg-[#1C1C1E] border-t border-white/[0.12] p-5 pb-8 shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="fixed bottom-0 inset-x-0 z-50 max-w-lg mx-auto rounded-t-3xl apple-glass border-t border-black/[0.1] p-5 pb-8 shadow-2xl max-h-[90vh] overflow-y-auto"
           >
             {/* Grab Handle */}
             <div className="w-10 h-1.5 rounded-full bg-zinc-700 mx-auto mb-4" />
@@ -183,27 +183,27 @@ export function QuickAddModal() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#30D158]" />
-                <h2 className="text-base font-semibold text-white">
+                <h2 className="text-base font-semibold text-[#1D1D1F]">
                   Quick Entry • VitalBudget
                 </h2>
               </div>
               <button
                 onClick={() => setQuickAddOpen(false)}
-                className="w-8 h-8 rounded-full bg-[#2C2C2E] flex items-center justify-center text-zinc-400 hover:text-white"
+                className="w-8 h-8 rounded-full bg-black/[0.04] flex items-center justify-center text-[#6E6E73] hover:text-[#1D1D1F]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Mode Segmented Control */}
-            <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-[#121214] border border-white/[0.06] mb-5">
+            <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-white/70 border border-black/[0.07] mb-5">
               <button
                 type="button"
                 onClick={() => setMode("tx")}
                 className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium transition ${
                   mode === "tx"
-                    ? "bg-[#2C2C2E] text-white shadow"
-                    : "text-zinc-400"
+                    ? "bg-black/[0.04] text-[#1D1D1F] shadow"
+                    : "text-[#6E6E73]"
                 }`}
               >
                 <Wallet className="w-3.5 h-3.5 text-[#0A84FF]" />
@@ -214,8 +214,8 @@ export function QuickAddModal() {
                 onClick={() => setMode("grocery")}
                 className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium transition ${
                   mode === "grocery"
-                    ? "bg-[#2C2C2E] text-white shadow"
-                    : "text-zinc-400"
+                    ? "bg-black/[0.04] text-[#1D1D1F] shadow"
+                    : "text-[#6E6E73]"
                 }`}
               >
                 <ShoppingCart className="w-3.5 h-3.5 text-[#30D158]" />
@@ -226,8 +226,8 @@ export function QuickAddModal() {
                 onClick={() => setMode("batch")}
                 className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium transition ${
                   mode === "batch"
-                    ? "bg-[#2C2C2E] text-white shadow"
-                    : "text-zinc-400"
+                    ? "bg-black/[0.04] text-[#1D1D1F] shadow"
+                    : "text-[#6E6E73]"
                 }`}
               >
                 <CookingPot className="w-3.5 h-3.5 text-[#FF9F0A]" />
@@ -245,7 +245,7 @@ export function QuickAddModal() {
                       className={`py-2 rounded-xl text-xs font-semibold border transition ${
                         txType === "expense"
                           ? "bg-[#FF453A]/15 border-[#FF453A]/40 text-[#FF453A]"
-                          : "bg-[#2C2C2E] border-transparent text-zinc-400"
+                          : "bg-black/[0.04] border-transparent text-[#6E6E73]"
                       }`}
                     >
                       Expense (-)
@@ -256,7 +256,7 @@ export function QuickAddModal() {
                       className={`py-2 rounded-xl text-xs font-semibold border transition ${
                         txType === "income"
                           ? "bg-[#30D158]/15 border-[#30D158]/40 text-[#30D158]"
-                          : "bg-[#2C2C2E] border-transparent text-zinc-400"
+                          : "bg-black/[0.04] border-transparent text-[#6E6E73]"
                       }`}
                     >
                       Salary / Income (+)
@@ -264,7 +264,7 @@ export function QuickAddModal() {
                   </div>
 
                   {txType === "income" && (
-                    <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#121214] border border-white/[0.06]">
+                    <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/70 border border-black/[0.07]">
                       <button
                         type="button"
                         onClick={() => {
@@ -273,8 +273,8 @@ export function QuickAddModal() {
                         }}
                         className={`py-1.5 rounded-lg text-[11px] font-semibold transition ${
                           incomeMode === "salary"
-                            ? "bg-[#2C2C2E] text-[#30D158]"
-                            : "text-zinc-400"
+                            ? "bg-black/[0.04] text-[#30D158]"
+                            : "text-[#6E6E73]"
                         }`}
                       >
                         Set Base Salary (Replaces)
@@ -287,8 +287,8 @@ export function QuickAddModal() {
                         }}
                         className={`py-1.5 rounded-lg text-[11px] font-semibold transition ${
                           incomeMode === "bonus"
-                            ? "bg-[#2C2C2E] text-[#64D2FF]"
-                            : "text-zinc-400"
+                            ? "bg-black/[0.04] text-[#64D2FF]"
+                            : "text-[#6E6E73]"
                         }`}
                       >
                         Extra Bonus (+ Adds)
@@ -297,7 +297,7 @@ export function QuickAddModal() {
                   )}
 
                   <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">
+                    <label className="block text-[11px] text-[#6E6E73] mb-1">
                       Transaction Label
                     </label>
                     <input
@@ -309,13 +309,13 @@ export function QuickAddModal() {
                       }
                       value={txLabel}
                       onChange={(e) => setTxLabel(e.target.value)}
-                      className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#0A84FF]"
+                      className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2.5 text-sm text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none focus:border-[#0A84FF]"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Amount (€)
                       </label>
                       <input
@@ -325,19 +325,19 @@ export function QuickAddModal() {
                         placeholder="24.90"
                         value={txAmount}
                         onChange={(e) => setTxAmount(e.target.value)}
-                        className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2.5 text-sm text-white tabular-nums focus:outline-none focus:border-[#0A84FF]"
+                        className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2.5 text-sm text-[#1D1D1F] tabular-nums focus:outline-none focus:border-[#0A84FF]"
                       />
                     </div>
 
                     {txType === "expense" && (
                       <div>
-                        <label className="block text-[11px] text-zinc-400 mb-1">
+                        <label className="block text-[11px] text-[#6E6E73] mb-1">
                           Budget Envelope
                         </label>
                         <select
                           value={txEnvelopeId}
                           onChange={(e) => setTxEnvelopeId(e.target.value)}
-                          className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#0A84FF]"
+                          className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3 py-2.5 text-sm text-[#1D1D1F] focus:outline-none focus:border-[#0A84FF]"
                         >
                           {envelopes.map((env) => (
                             <option key={env.id} value={env.id}>
@@ -352,7 +352,7 @@ export function QuickAddModal() {
                   {/* Transaction Date with Shortcuts */}
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+                      <label className="text-[11px] text-[#6E6E73] flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-[#0A84FF]" />
                         Transaction Date
                       </label>
@@ -360,7 +360,7 @@ export function QuickAddModal() {
                         <button
                           type="button"
                           onClick={() => setTxDate(new Date().toISOString().split("T")[0])}
-                          className="px-2 py-0.5 rounded-md bg-[#2C2C2E] hover:bg-white/10 text-[10px] text-zinc-300 font-medium transition"
+                          className="px-2 py-0.5 rounded-md bg-black/[0.04] hover:bg-white/10 text-[10px] text-[#3A3A3C] font-medium transition"
                         >
                           Today
                         </button>
@@ -371,7 +371,7 @@ export function QuickAddModal() {
                             d.setDate(d.getDate() - 1);
                             setTxDate(d.toISOString().split("T")[0]);
                           }}
-                          className="px-2 py-0.5 rounded-md bg-[#2C2C2E] hover:bg-white/10 text-[10px] text-zinc-300 font-medium transition"
+                          className="px-2 py-0.5 rounded-md bg-black/[0.04] hover:bg-white/10 text-[10px] text-[#3A3A3C] font-medium transition"
                         >
                           Yesterday
                         </button>
@@ -383,7 +383,7 @@ export function QuickAddModal() {
                             const mm = String(now.getMonth() + 1).padStart(2, "0");
                             setTxDate(`${yyyy}-${mm}-01`);
                           }}
-                          className="px-2 py-0.5 rounded-md bg-[#2C2C2E] hover:bg-white/10 text-[10px] text-[#0A84FF] font-medium transition"
+                          className="px-2 py-0.5 rounded-md bg-black/[0.04] hover:bg-white/10 text-[10px] text-[#0A84FF] font-medium transition"
                         >
                           1st of Month
                         </button>
@@ -394,7 +394,7 @@ export function QuickAddModal() {
                       required
                       value={txDate}
                       onChange={(e) => setTxDate(e.target.value)}
-                      className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#0A84FF] [color-scheme:dark]"
+                      className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2.5 text-sm text-[#1D1D1F] focus:outline-none focus:border-[#0A84FF] [color-scheme:dark]"
                     />
                   </div>
                 </>
@@ -404,18 +404,18 @@ export function QuickAddModal() {
                 <>
                   <div className="grid grid-cols-4 gap-2">
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Icon
                       </label>
                       <input
                         type="text"
                         value={grEmoji}
                         onChange={(e) => setGrEmoji(e.target.value)}
-                        className="w-full text-center rounded-xl bg-[#2C2C2E] border border-white/[0.08] py-2.5 text-base"
+                        className="w-full text-center rounded-xl bg-black/[0.04] border border-black/[0.07] py-2.5 text-base"
                       />
                     </div>
                     <div className="col-span-3">
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Food Item Name
                       </label>
                       <input
@@ -424,14 +424,14 @@ export function QuickAddModal() {
                         placeholder="e.g., Sweet Potatoes Bulk"
                         value={grName}
                         onChange={(e) => setGrName(e.target.value)}
-                        className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2.5 text-sm text-white"
+                        className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2.5 text-sm text-[#1D1D1F]"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Nutritional Family
                       </label>
                       <select
@@ -439,7 +439,7 @@ export function QuickAddModal() {
                         onChange={(e) =>
                           setGrFamily(e.target.value as NutritionalFamily)
                         }
-                        className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-2.5 py-2.5 text-xs text-white"
+                        className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-2.5 py-2.5 text-xs text-[#1D1D1F]"
                       >
                         {FAMILIES.map((f) => (
                           <option key={f} value={f}>
@@ -450,7 +450,7 @@ export function QuickAddModal() {
                     </div>
                     {grFamily === "Veggies & Vitamins" && (
                       <div>
-                        <label className="block text-[11px] text-zinc-400 mb-1">
+                        <label className="block text-[11px] text-[#6E6E73] mb-1">
                           Veggie Sub-Family
                         </label>
                         <select
@@ -458,7 +458,7 @@ export function QuickAddModal() {
                           onChange={(e) =>
                             setGrSubFamily(e.target.value as VegSubFamily)
                           }
-                          className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-2.5 py-2.5 text-xs text-white"
+                          className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-2.5 py-2.5 text-xs text-[#1D1D1F]"
                         >
                           {VEG_SUBFAMILIES.map((sf) => (
                             <option key={sf} value={sf}>
@@ -472,7 +472,7 @@ export function QuickAddModal() {
 
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Price Paid (€)
                       </label>
                       <input
@@ -480,11 +480,11 @@ export function QuickAddModal() {
                         step="0.01"
                         value={grPrice}
                         onChange={(e) => setGrPrice(e.target.value)}
-                        className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3 py-2 text-sm text-white tabular-nums"
+                        className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3 py-2 text-sm text-[#1D1D1F] tabular-nums"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Weight / Vol.
                       </label>
                       <input
@@ -492,17 +492,17 @@ export function QuickAddModal() {
                         step="0.05"
                         value={grQty}
                         onChange={(e) => setGrQty(e.target.value)}
-                        className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3 py-2 text-sm text-white tabular-nums"
+                        className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3 py-2 text-sm text-[#1D1D1F] tabular-nums"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Unit
                       </label>
                       <select
                         value={grUnit}
                         onChange={(e) => setGrUnit(e.target.value as UnitType)}
-                        className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3 py-2 text-sm text-white"
+                        className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3 py-2 text-sm text-[#1D1D1F]"
                       >
                         <option value="kg">kg</option>
                         <option value="L">L</option>
@@ -511,8 +511,8 @@ export function QuickAddModal() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#121214] border border-white/[0.06]">
-                    <span className="text-xs text-zinc-400">
+                  <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/70 border border-black/[0.07]">
+                    <span className="text-xs text-[#6E6E73]">
                       Calculated Price per {grUnit}:
                     </span>
                     <span className="text-sm font-bold text-[#30D158] tabular-nums">
@@ -521,14 +521,14 @@ export function QuickAddModal() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">
+                    <label className="block text-[11px] text-[#6E6E73] mb-1">
                       Key Vitamins & Minerals (comma-separated)
                     </label>
                     <input
                       type="text"
                       value={grVitamins}
                       onChange={(e) => setGrVitamins(e.target.value)}
-                      className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2 text-xs text-white"
+                      className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2 text-xs text-[#1D1D1F]"
                     />
                   </div>
                 </>
@@ -538,18 +538,18 @@ export function QuickAddModal() {
                 <>
                   <div className="grid grid-cols-4 gap-2">
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Emoji
                       </label>
                       <input
                         type="text"
                         value={bmEmoji}
                         onChange={(e) => setBmEmoji(e.target.value)}
-                        className="w-full text-center rounded-xl bg-[#2C2C2E] border border-white/[0.08] py-2.5 text-base"
+                        className="w-full text-center rounded-xl bg-black/[0.04] border border-black/[0.07] py-2.5 text-base"
                       />
                     </div>
                     <div className="col-span-3">
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Batch Dish Name
                       </label>
                       <input
@@ -558,14 +558,14 @@ export function QuickAddModal() {
                         placeholder="e.g., Pasta Bolognese, Chicken Stir-Fry"
                         value={bmTitle}
                         onChange={(e) => setBmTitle(e.target.value)}
-                        className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2.5 text-sm text-white"
+                        className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2.5 text-sm text-[#1D1D1F]"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Portions (4-8)
                       </label>
                       <input
@@ -574,11 +574,11 @@ export function QuickAddModal() {
                         max={12}
                         value={bmPortions}
                         onChange={(e) => setBmPortions(e.target.value)}
-                        className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3 py-2 text-sm text-white tabular-nums"
+                        className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3 py-2 text-sm text-[#1D1D1F] tabular-nums"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Total Cost (€)
                       </label>
                       <input
@@ -586,24 +586,24 @@ export function QuickAddModal() {
                         step="0.1"
                         value={bmTotalCost}
                         onChange={(e) => setBmTotalCost(e.target.value)}
-                        className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3 py-2 text-sm text-white tabular-nums"
+                        className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3 py-2 text-sm text-[#1D1D1F] tabular-nums"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] text-zinc-400 mb-1">
+                      <label className="block text-[11px] text-[#6E6E73] mb-1">
                         Prep Time (min)
                       </label>
                       <input
                         type="number"
                         value={bmPrepTime}
                         onChange={(e) => setBmPrepTime(e.target.value)}
-                        className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3 py-2 text-sm text-white tabular-nums"
+                        className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3 py-2 text-sm text-[#1D1D1F] tabular-nums"
                       />
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#121214] border border-white/[0.06]">
-                    <span className="text-xs text-zinc-400">
+                  <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/70 border border-black/[0.07]">
+                    <span className="text-xs text-[#6E6E73]">
                       Cost per portion (Auto DLC calculated):
                     </span>
                     <span className="text-sm font-bold text-[#30D158] tabular-nums">
@@ -612,14 +612,14 @@ export function QuickAddModal() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">
+                    <label className="block text-[11px] text-[#6E6E73] mb-1">
                       Vitamin Badges (Vit C, B12, Iron, Magnesium, Omega-3)
                     </label>
                     <input
                       type="text"
                       value={bmVitamins}
                       onChange={(e) => setBmVitamins(e.target.value)}
-                      className="w-full rounded-xl bg-[#2C2C2E] border border-white/[0.08] px-3.5 py-2 text-xs text-white"
+                      className="w-full rounded-xl bg-black/[0.04] border border-black/[0.07] px-3.5 py-2 text-xs text-[#1D1D1F]"
                     />
                   </div>
                 </>
@@ -627,7 +627,7 @@ export function QuickAddModal() {
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-2xl bg-[#0A84FF] hover:bg-[#0A84FF]/90 text-white font-semibold text-sm shadow-lg shadow-[#0A84FF]/25 transition active:scale-[0.99]"
+                className="w-full py-3 rounded-2xl bg-[#0A84FF] hover:bg-[#0A84FF]/90 text-[#1D1D1F] font-semibold text-sm shadow-lg shadow-[#0A84FF]/25 transition active:scale-[0.99]"
               >
                 Save Entry
               </button>
