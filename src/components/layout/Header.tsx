@@ -50,136 +50,16 @@ export function Header() {
 
   return (
     <>
-      {/* TRUE HARDWARE-ALIGNED IPHONE DYNAMIC ISLAND (TOP-CENTER #000000) */}
-      <div className="fixed top-[10px] left-1/2 -translate-x-1/2 z-50 flex flex-col items-center pointer-events-auto">
-        <motion.div
-          layout
-          transition={ISLAND_SPRING}
-          onClick={() => setIslandExpanded(!islandExpanded)}
-          style={{
-            borderRadius: islandExpanded ? 36 : 9999,
-          }}
-          className={`bg-black text-white shadow-[0_10px_35px_rgba(0,0,0,0.45)] border border-white/[0.12] cursor-pointer overflow-hidden select-none ${
-            islandExpanded
-              ? "w-[92vw] max-w-[356px] pt-[44px] pb-4 px-5"
-              : "w-[258px] h-[37px] px-3 flex items-center justify-between"
-          }`}
-        >
-          {!islandExpanded ? (
-            <>
-              {/* Left Wing (sits immediately to the left of the physical camera cutout) */}
-              <div className="flex items-center gap-1.5 min-w-[58px]">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                <span className="text-[11px] font-bold tracking-tight text-white tabular-nums">
-                  {Math.round(dailyBudgetAllowed)}€/j
-                </span>
-              </div>
-
-              {/* Center Spacer (124px reserved for the physical iPhone Dynamic Island hardware cutout) */}
-              <div
-                aria-hidden="true"
-                className="w-[110px] h-full shrink-0 flex items-center justify-center"
-              >
-                <span className="text-[9px] font-semibold uppercase tracking-widest text-white/30">
-                  Kora
-                </span>
-              </div>
-
-              {/* Right Wing (sits immediately to the right of the physical camera cutout) */}
-              <div className="flex items-center justify-end gap-1 min-w-[58px] text-emerald-400">
-                <Utensils className="w-3 h-3 shrink-0" />
-                <span className="text-[11px] font-bold tabular-nums">
-                  {totalFridgePortions}
-                </span>
-                <ChevronDown className="w-2.5 h-2.5 text-white/50" />
-              </div>
-            </>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.18 }}
-              className="space-y-3"
-            >
-              {/* Top Row Flanking the Hardware Cutout */}
-              <div className="flex items-center justify-between text-[11px] text-white/70 -mt-7 mb-3 px-1">
-                <span className="flex items-center gap-1.5 font-semibold text-emerald-400">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Kora Live
-                </span>
-                <span className="text-white/50 font-mono text-[10px]">
-                  {currentMonthLabel}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIslandExpanded(false);
-                    setActiveTab("stocks");
-                  }}
-                  className="p-3 rounded-2xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/10 transition-colors"
-                >
-                  <span className="text-[10px] uppercase tracking-wider text-white/50 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-[#60A5FA]" />
-                    Cadence Jour
-                  </span>
-                  <p className="text-base font-extrabold text-white tabular-nums mt-0.5">
-                    {formatEUR(dailyBudgetAllowed)}
-                  </p>
-                </div>
-
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIslandExpanded(false);
-                    setActiveTab("batch");
-                  }}
-                  className="p-3 rounded-2xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/10 transition-colors"
-                >
-                  <span className="text-[10px] uppercase tracking-wider text-white/50 flex items-center gap-1">
-                    <Utensils className="w-3 h-3 text-emerald-400" />
-                    Stock Batch
-                  </span>
-                  <p className="text-base font-extrabold text-emerald-400 tabular-nums mt-0.5">
-                    {totalFridgePortions} boîtes →
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-1 flex items-center justify-between text-[11px] text-white/60">
-                <span className="flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-emerald-400" />
-                  <span>Données 100% privées sur ton iPhone</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIslandExpanded(false);
-                    setShowInstallModal(true);
-                  }}
-                  className="text-[#60A5FA] font-semibold hover:underline"
-                >
-                  Guide iOS
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </motion.div>
-      </div>
-
-      <header className="sticky top-0 z-30 backdrop-blur-2xl bg-white/75 border-b border-white/90 shadow-[0_4px_24px_rgba(15,23,42,0.035)] px-4 pb-2.5 pt-[56px]">
+      <header className="sticky top-0 z-40 backdrop-blur-2xl bg-white/80 border-b border-white/90 shadow-[0_4px_24px_rgba(15,23,42,0.04)] px-3.5 pb-2.5 pt-[max(0.75rem,calc(env(safe-area-inset-top,0px)+0.35rem))]">
         <div className="max-w-lg mx-auto flex items-center justify-between gap-2">
-          {/* Kora Brand Emblem */}
+          {/* Left: Kora Brand Emblem */}
           <motion.button
             whileTap={{ scale: 0.96 }}
             type="button"
             onClick={() => setActiveTab("stocks")}
-            className="flex items-center gap-2.5 text-left group shrink-0"
+            className="flex items-center gap-2 text-left group shrink-0"
           >
-            <div className="relative w-9 h-9 rounded-2xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0071E3] p-[1px] shadow-md shadow-[#0071E3]/15 group-hover:scale-105 transition-transform">
+            <div className="relative w-8 h-8 rounded-2xl bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0071E3] p-[1px] shadow-md shadow-[#0071E3]/15 group-hover:scale-105 transition-transform">
               <div className="w-full h-full rounded-[15px] bg-gradient-to-br from-[#0F172A] to-[#1E293B] flex items-center justify-center">
                 <svg
                   viewBox="0 0 24 24"
@@ -229,32 +109,131 @@ export function Header() {
               </div>
             </div>
 
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-base font-bold tracking-[-0.03em] text-[#0F172A] leading-none">
+            <div className="hidden xs:block">
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-bold tracking-[-0.03em] text-[#0F172A] leading-none">
                   Kora
                 </span>
-                <span className="px-1.5 py-0.5 rounded-md bg-[#0F172A]/[0.06] text-[9px] font-bold uppercase tracking-widest text-[#475569]">
-                  OS
-                </span>
               </div>
-              <span className="text-[10px] text-[#64748B] font-medium block mt-0.5">
+              <span className="text-[9px] text-[#64748B] font-medium block mt-0.5">
                 {currentMonthLabel}
               </span>
             </div>
           </motion.button>
 
-          <div className="flex items-center gap-1.5">
-            {/* iPhone Native App Install Guide Button */}
+          {/* Center: Kora Dynamic Island Capsule (Sits cleanly right under the physical iPhone cutout) */}
+          <div className="relative flex justify-center">
+            <motion.button
+              layout
+              whileTap={{ scale: 0.95 }}
+              transition={ISLAND_SPRING}
+              type="button"
+              onClick={() => setIslandExpanded(!islandExpanded)}
+              className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-black text-white shadow-[0_8px_24px_rgba(0,0,0,0.28)] border border-white/15"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="text-xs font-bold tracking-tight tabular-nums">
+                {formatEUR(dailyBudgetAllowed)}/j
+              </span>
+              <span className="text-white/25">•</span>
+              <span className="flex items-center gap-1 text-xs text-emerald-400 font-bold tabular-nums">
+                <Utensils className="w-3 h-3" />
+                {totalFridgePortions}
+              </span>
+              <ChevronDown
+                className={`w-3 h-3 text-white/60 transition-transform duration-300 ${
+                  islandExpanded ? "rotate-180" : ""
+                }`}
+              />
+            </motion.button>
+
+            <AnimatePresence>
+              {islandExpanded && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.92 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.92 }}
+                  transition={ISLAND_SPRING}
+                  className="fixed left-1/2 -translate-x-1/2 mt-11 w-[92vw] max-w-[350px] p-4 rounded-[30px] bg-black/95 backdrop-blur-2xl text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/15 space-y-3 z-50"
+                >
+                  <div className="flex items-center justify-between text-[11px] text-white/70">
+                    <span className="flex items-center gap-1.5 font-semibold text-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Kora Dynamic Island
+                    </span>
+                    <span className="text-white/50 font-mono text-[10px]">
+                      {currentMonthLabel}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIslandExpanded(false);
+                        setActiveTab("stocks");
+                      }}
+                      className="text-left p-3 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 transition-colors"
+                    >
+                      <span className="text-[10px] uppercase tracking-wider text-white/50 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-[#60A5FA]" />
+                        Cadence Jour
+                      </span>
+                      <p className="text-base font-extrabold text-white tabular-nums mt-0.5">
+                        {formatEUR(dailyBudgetAllowed)}
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIslandExpanded(false);
+                        setActiveTab("batch");
+                      }}
+                      className="text-left p-3 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 transition-colors"
+                    >
+                      <span className="text-[10px] uppercase tracking-wider text-white/50 flex items-center gap-1">
+                        <Utensils className="w-3 h-3 text-emerald-400" />
+                        Stock Batch
+                      </span>
+                      <p className="text-base font-extrabold text-emerald-400 tabular-nums mt-0.5">
+                        {totalFridgePortions} boîtes →
+                      </p>
+                    </button>
+                  </div>
+
+                  <div className="pt-1 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
+                    <span className="flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-emerald-400" />
+                      <span>100% privé sur cet iPhone</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIslandExpanded(false);
+                        setShowInstallModal(true);
+                      }}
+                      className="text-[#60A5FA] font-semibold hover:underline"
+                    >
+                      Guide iOS
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Right: iPhone App Guide Button */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <motion.button
               whileTap={{ scale: 0.94 }}
               type="button"
               onClick={() => setShowInstallModal(true)}
-              className="apple-glass-pill px-3 py-1.5 rounded-full text-[11px] font-semibold text-[#0F172A] flex items-center gap-1.5 shadow-xs"
-              title="Installer Kora comme vraie application sur ton iPhone"
+              className="apple-glass-pill px-2.5 py-1.5 rounded-full text-[11px] font-semibold text-[#0F172A] flex items-center gap-1 shadow-xs"
+              title="Guide iPhone"
             >
               <Smartphone className="w-3.5 h-3.5 text-[#0071E3]" />
-              <span>App iPhone</span>
+              <span className="hidden sm:inline">iPhone</span>
             </motion.button>
           </div>
         </div>
