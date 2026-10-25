@@ -64,7 +64,7 @@ function downloadIcsFile(ev: {
   const ics = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//VitalBudget//AI Agent//FR",
+    "PRODID:-//Kora//AI Agent//FR",
     "BEGIN:VEVENT",
     `DTSTART:${fmt(ev.startIso)}`,
     `DTEND:${fmt(ev.endIso)}`,
@@ -245,7 +245,7 @@ export function VitalAgentCard() {
       setNotifPermission(perm);
       if (perm === "granted") {
         triggerNativeNotification(
-          "VitalBudget — Alertes DLC & Budget activées ✅",
+          "Kora — Alertes DLC & Budget activées ✅",
           `Tu recevras tes rappels de boîtes Batch Cooking et de budget (${formatEUR(dailyBudgetAllowed)}/jour).`
         );
       }
@@ -262,7 +262,7 @@ export function VitalAgentCard() {
       setAgentReply("Kill Switch activé. Les 2 agents sont verrouillés (0,00 €).");
       setLastAction({ type: "NONE" });
     } else {
-      setAgentReply("Agents réactivés. Choisis Vital CFO ou Chef Nutritionniste !");
+      setAgentReply("Agents réactivés. Choisis Kora Flow ou Chef Nutritionniste !");
     }
   };
 
@@ -571,8 +571,8 @@ export function VitalAgentCard() {
             <div>
               <span className="text-xs font-bold text-[#0F172A] tracking-tight block">
                 {activePersona === "finance"
-                  ? "Agent 1 • Vital CFO (Finances & Agenda)"
-                  : "Agent 2 • Chef & Nutritionniste IA (Courses & DLC)"}
+                  ? "Kora Flow • Concierge Financier & Agenda"
+                  : "Kora Chef • Nutritionniste, Courses & DLC"}
               </span>
               <span className="text-[11px] text-[#64748B] tabular-nums">
                 {dailyCallsUsed}/{DAILY_FREE_LIMIT} entrées gratuites • 0,00 €
@@ -661,7 +661,7 @@ export function VitalAgentCard() {
               />
             )}
             <Wallet className="w-3.5 h-3.5 text-[#0071E3]" />
-            <span>Vital CFO (Budget & Agenda)</span>
+            <span>Kora Flow (Budget &amp; Agenda)</span>
           </button>
 
           <button
@@ -681,7 +681,7 @@ export function VitalAgentCard() {
               />
             )}
             <ChefHat className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Nutritionniste (Courses & DLC)</span>
+            <span>Kora Chef (Courses &amp; DLC)</span>
           </button>
         </div>
 
@@ -697,8 +697,8 @@ export function VitalAgentCard() {
                 killSwitchActive
                   ? "Agents verrouillés (Kill Switch actif)..."
                   : activePersona === "finance"
-                  ? "Parle à Vital CFO : « J'ai pas 400 mais 359€ », « Mets sur Google Agenda demain 18h »..."
-                  : "Parle au Nutritionniste : « Conseille mes courses de la semaine », « J'ai cuisiné 5 boîtes de curry »..."
+                  ? "Demande à Kora Flow : « J'ai pas 400 mais 359€ », « Mets sur Google Agenda demain 18h »..."
+                  : "Demande à Kora Chef : « Conseille mes courses de la semaine », « J'ai cuisiné 5 boîtes de curry »..."
               }
               className="w-full bg-transparent pl-4 pr-12 py-3.5 text-xs sm:text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none disabled:opacity-40"
             />

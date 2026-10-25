@@ -310,7 +310,7 @@ export function StocksDashboard() {
 
         {transactions.length === 0 ? (
           <p className="text-xs text-[#64748B] text-center py-6">
-            Aucune opération. Parle à Vital CFO ci-dessus pour ajouter une
+            Aucune opération. Parle à Kora Flow ci-dessus pour ajouter une
             dépense.
           </p>
         ) : (

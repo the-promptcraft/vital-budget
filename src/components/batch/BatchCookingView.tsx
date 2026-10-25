@@ -401,7 +401,7 @@ export function BatchCookingView() {
           d.assignedMeal!.title
         } (${formatEUR(d.assignedMeal!.costPerPortion)})`,
         dateYmd: d.dateYmd,
-        details: `VitalBudget Batch Cooking Dinner\nPortion Cost: ${formatEUR(
+        details: `Kora Batch Cooking Dinner\nPortion Cost: ${formatEUR(
           d.assignedMeal!.costPerPortion
         )}\nUse by: ${d.assignedMeal!.dlcFormatted}`,
       }));
@@ -815,7 +815,7 @@ export function BatchCookingView() {
                       slot.assignedMeal.title
                     } (${formatEUR(slot.assignedMeal.costPerPortion)})`,
                     dateYmd: slot.dateYmd,
-                    details: `Dinner scheduled by VitalBudget.\nPortion Cost: ${formatEUR(
+                    details: `Dinner scheduled by Kora.\nPortion Cost: ${formatEUR(
                       slot.assignedMeal.costPerPortion
                     )}\nUse by: ${slot.assignedMeal.dlcFormatted}`,
                   })

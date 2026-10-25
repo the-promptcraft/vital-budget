@@ -238,11 +238,11 @@ function parseFrenchCalendarRequest(
     if (cleaned.length >= 3) {
       title = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
     } else if (/batch|cuisin|curry|repas/i.test(lower)) {
-      title = "Session Batch Cooking VitalBudget";
+      title = "Session Batch Cooking Kora";
     } else if (/courses|lidl|carrefour|supermarché/i.test(lower)) {
-      title = "Courses Hebdo VitalBudget";
+      title = "Courses Hebdo Kora";
     } else {
-      title = "Rappel VitalBudget";
+      title = "Rappel Kora";
     }
   }
 
@@ -400,7 +400,7 @@ function enforceGuaranteedActions(
     /(?:agenda|google|calendrier|calendar|planifie|rappelle-moi)/i.test(lower)
   ) {
     const parsedCal = parseFrenchCalendarRequest(userMessage);
-    const desc = `Planifié par VitalBudget IA • Reste à vivre : ${ctx.disposableLeft.toFixed(2)} € (${ctx.dailyBudgetAllowed.toFixed(2)} €/jour)`;
+    const desc = `Planifié par Kora IA • Reste à vivre : ${ctx.disposableLeft.toFixed(2)} € (${ctx.dailyBudgetAllowed.toFixed(2)} €/jour)`;
     const calAction = buildCalendarEventAction(
       parsedCal.title,
       desc,
@@ -533,11 +533,11 @@ async function callCloudLLM(
 
   const personaIntro =
     persona === "nutrition"
-      ? `Tu es "Vital Chef & Nutritionniste IA", expert en nutrition, optimisation des courses au kilo, Batch Cooking, gestion des boîtes (containers) et calcul automatique des DLC (dates limites de consommation).`
-      : `Tu es "Vital CFO", directeur financier personnel intelligent, expert en gestion de budget, correction de solde en temps réel et synchronisation Google Agenda.`;
+      ? `Tu es "Kora Chef", expert en nutrition, optimisation des courses au kilo, Batch Cooking, gestion des boîtes (containers) et calcul automatique des DLC (dates limites de consommation).`
+      : `Tu es "Kora Flow", directeur financier personnel intelligent, expert en gestion de budget, correction de solde en temps réel et synchronisation Google Agenda.`;
 
   const systemPrompt = `${personaIntro}
-Tu pilotes l'application VitalBudget directement pour l'utilisateur. Sois chaleureux, ultra-intelligent, précis et concis (2 à 3 phrases max).
+Tu pilotes l'application Kora directement pour l'utilisateur. Sois chaleureux, ultra-intelligent, précis et concis (2 à 3 phrases max).
 
 ÉTAT DU DASHBOARD EN TEMPS RÉEL :
 - Reste à vivre disponible : ${ctx.disposableLeft.toFixed(2)} € (${ctx.dailyBudgetAllowed.toFixed(2)} €/jour pour ${ctx.remainingDays} jours)
@@ -739,7 +739,7 @@ function normalizeParsedAction(
       rawHour,
       rawDays
     );
-    const desc = `Planifié par VitalBudget IA • Reste à vivre actuel : ${ctx.disposableLeft.toFixed(2)} € (${ctx.dailyBudgetAllowed.toFixed(2)} €/jour)`;
+    const desc = `Planifié par Kora IA • Reste à vivre actuel : ${ctx.disposableLeft.toFixed(2)} € (${ctx.dailyBudgetAllowed.toFixed(2)} €/jour)`;
     return buildCalendarEventAction(
       parsedCal.title,
       desc,

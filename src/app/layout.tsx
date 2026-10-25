@@ -2,19 +2,19 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VitalBudget — Assistant Personnel & Budget",
+  title: "Kora — Wealth & Nutrition Intelligence",
   description:
-    "Votre assistant financier et nutritionnel intelligent, design Apple Liquid Glass.",
+    "Votre argent. Votre assiette. Pilotés en temps réel par Kora Flow & Kora Chef.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "VitalBudget",
+    title: "Kora",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F2F4F8",
+  themeColor: "#EEF1F7",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className="min-h-screen bg-[#F2F4F8] text-[#1D1D1F] antialiased selection:bg-[#0071E3]/20">
+      <body className="min-h-screen bg-[#EEF1F7] text-[#0F172A] antialiased selection:bg-[#0071E3]/20">
         {children}
       </body>
     </html>

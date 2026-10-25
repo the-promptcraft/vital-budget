@@ -1,10 +1,10 @@
 {
-  "name": "VitalBudget — Finances Bourse & Nutrition Éco",
-  "short_name": "VitalBudget",
-  "description": "PWA Mobile-First — Suivi Financier Style Apple Stocks, Optimisation Économique des Courses & Batch Cooking Nutritionnel.",
+  "name": "Kora — Wealth & Nutrition Intelligence",
+  "short_name": "Kora",
+  "description": "Votre argent et votre assiette, pilotés en temps réel par deux agents IA.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#121214",
-  "theme_color": "#121214",
+  "background_color": "#EEF1F7",
+  "theme_color": "#EEF1F7",
   "orientation": "portrait"
 }
