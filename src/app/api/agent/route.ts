@@ -1,20 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-/**
- * ============================================================================
- * 🧠 VITAL AGENT V3 — VRAI LLM 20B GRATUIT SANS CLÉ + HUGGING FACE QWEN 2.5
- * ============================================================================
- * Pourquoi l'agent était limité avant ?
- * - Avant, sans clé Hugging Face (`hf_...`), il utilisait uniquement 6 règles
- *   `if/else` basiques (expressions régulières).
- * - Maintenant, même SANS clé Hugging Face, il appelle un VRAI grand modèle de
- *   langage open-source 100% gratuit et sans compte (`gpt-oss-20b` via
- *   Pollinations OpenAI-compatible router), ou `Qwen/Qwen2.5-7B-Instruct` sur
- *   Hugging Face si tu renseignes un token `hf_...`.
- * - Il garde aussi la mémoire de la conversation (`history`) et peut modifier
- *   n'importe quel chiffre du dashboard + créer des événements Google Agenda !
- * ============================================================================
- */
+export type AgentPersona = "finance" | "nutrition";
 
 export interface AgentContextPayload {
   disposableLeft: number;
@@ -39,8 +25,11 @@ export interface AgentContextPayload {
     id: string;
     title: string;
     remainingPortions: number;
+    totalPortions: number;
     costPerPortion: number;
     externalMealPrice: number;
+    shelfLifeDays?: number;
+    lastCookedAt: string;
   }[];
 }
 
@@ -84,6 +73,28 @@ export type AgentActionType =
       savedAmount: number;
     }
   | {
+      type: "ADD_BATCH_MEAL";
+      title: string;
+      emoji: string;
+      portions: number;
+      totalCost: number;
+      shelfLifeDays: number;
+      vitamins: string[];
+      containerPlan: string[];
+    }
+  | {
+      type: "GENERATE_WEEKLY_GROCERIES";
+      items: {
+        name: string;
+        emoji: string;
+        price: number;
+        quantity: number;
+        unit: "kg" | "L" | "unit";
+        vitamins: string[];
+      }[];
+      totalEstimated: number;
+    }
+  | {
       type: "UPDATE_SAVINGS_TARGET";
       newSavingsTarget: number;
     }
@@ -98,6 +109,8 @@ export type AgentActionType =
       type: "CREATE_CALENDAR_EVENT";
       title: string;
       dateLabel: string;
+      startIso: string;
+      endIso: string;
       googleCalendarUrl: string;
       description: string;
     }
@@ -108,6 +121,7 @@ export type AgentActionType =
 export interface AgentResponsePayload {
   reply: string;
   action: AgentActionType;
+  personaUsed: AgentPersona;
   provider:
     | "huggingface-qwen2.5"
     | "free-cloud-llm-20b"
@@ -120,19 +134,135 @@ const HF_ROUTER_URL = "https://router.huggingface.co/v1/chat/completions";
 const FREE_KEYLESS_LLM_URL = "https://text.pollinations.ai/openai";
 const DEFAULT_HF_MODEL = "Qwen/Qwen2.5-7B-Instruct";
 
-function buildGoogleCalendarUrl(
+/**
+ * Automatic DLC (Shelf-life in days) calculator per food type
+ */
+function inferShelfLifeDays(title: string): number {
+  const lower = title.toLowerCase();
+  if (/saumon|poisson|thon|crevette|cabillaud|mer/i.test(lower)) return 2;
+  if (/poulet|dinde|boeuf|viande|bolognaise|oeuf/i.test(lower)) return 3;
+  if (/lentille|pois chiche|tofu|végé|legume|curry|dahl|pâtes|riz|oats/i.test(lower))
+    return 4;
+  return 3;
+}
+
+function buildContainerPlan(title: string, portions: number, shelfDays: number): string[] {
+  const plan: string[] = [];
+  const days = ["Ce soir", "Demain midi", "Demain soir", "J+2 midi", "J+3 soir", "Congélateur (DLC 30j)"];
+  for (let i = 1; i <= portions; i++) {
+    const slot = i <= shelfDays ? days[Math.min(i - 1, 4)] : "❄️ À congeler dès aujourd'hui (DLC 30j)";
+    plan.push(`Boîte #${i} (${title}) → ${slot} • DLC max ${shelfDays}j`);
+  }
+  return plan;
+}
+
+function parseFrenchCalendarRequest(
+  userMessage: string,
+  fallbackTitle?: string,
+  fallbackHour?: number,
+  fallbackDaysOffset?: number
+): {
+  title: string;
+  daysOffset: number;
+  hour: number;
+  minute: number;
+} {
+  const lower = userMessage.toLowerCase();
+
+  let hour = fallbackHour ?? 18;
+  let minute = 0;
+  const timeMatch = lower.match(/(\d{1,2})\s*(?:h|:)\s*(\d{2})?/i);
+  if (timeMatch) {
+    const parsedH = parseInt(timeMatch[1], 10);
+    if (parsedH >= 0 && parsedH <= 23) hour = parsedH;
+    if (timeMatch[2]) {
+      const parsedM = parseInt(timeMatch[2], 10);
+      if (parsedM >= 0 && parsedM <= 59) minute = parsedM;
+    }
+  } else if (/matin/i.test(lower)) {
+    hour = 10;
+  } else if (/midi/i.test(lower)) {
+    hour = 12;
+  } else if (/après-midi|apres-midi/i.test(lower)) {
+    hour = 15;
+  } else if (/soir/i.test(lower)) {
+    hour = 19;
+  }
+
+  const now = new Date();
+  const currentDayOfWeek = now.getDay();
+  let daysOffset = fallbackDaysOffset ?? 1;
+
+  const weekdaysMap: Record<string, number> = {
+    dimanche: 0,
+    lundi: 1,
+    mardi: 2,
+    mercredi: 3,
+    jeudi: 4,
+    vendredi: 5,
+    samedi: 6,
+  };
+
+  if (/aujourd'hui|ce soir|cet après-midi/i.test(lower)) {
+    daysOffset = 0;
+  } else if (/après-demain|apres-demain/i.test(lower)) {
+    daysOffset = 2;
+  } else if (/demain/i.test(lower)) {
+    daysOffset = 1;
+  } else {
+    for (const [dayName, targetDow] of Object.entries(weekdaysMap)) {
+      if (lower.includes(dayName)) {
+        let diff = (targetDow - currentDayOfWeek + 7) % 7;
+        if (diff === 0) diff = 7;
+        daysOffset = diff;
+        break;
+      }
+    }
+  }
+
+  let title = fallbackTitle?.trim() || "";
+  if (!title || title === "Rappel Budget & Batch Cooking") {
+    const cleaned = userMessage
+      .replace(
+        /.*?(?:google\s*agenda|agenda|calendrier|rappelle-moi\s+de|rappelle-moi|planifie|ajoute|mets\s+sur\s+mon|mets)\s*:?\s*/i,
+        ""
+      )
+      .replace(
+        /\b(?:aujourd'hui|demain|après-demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|ce\s+soir|à|a)\b/gi,
+        " "
+      )
+      .replace(/\b\d{1,2}\s*(?:h|:)\s*\d{0,2}\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (cleaned.length >= 3) {
+      title = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+    } else if (/batch|cuisin|curry|repas/i.test(lower)) {
+      title = "Session Batch Cooking VitalBudget";
+    } else if (/courses|lidl|carrefour|supermarché/i.test(lower)) {
+      title = "Courses Hebdo VitalBudget";
+    } else {
+      title = "Rappel VitalBudget";
+    }
+  }
+
+  return { title, daysOffset, hour, minute };
+}
+
+function buildCalendarEventAction(
   title: string,
   description: string,
   daysOffset: number = 1,
-  hour: number = 18
-): { url: string; dateLabel: string } {
+  hour: number = 18,
+  minute: number = 0
+): Extract<AgentActionType, { type: "CREATE_CALENDAR_EVENT" }> {
   const now = new Date();
   const start = new Date(
     now.getFullYear(),
     now.getMonth(),
     now.getDate() + daysOffset,
     hour,
-    0,
+    minute,
     0
   );
   const end = new Date(start.getTime() + 60 * 60 * 1000);
@@ -156,19 +286,24 @@ function buildGoogleCalendarUrl(
   });
 
   return {
-    url: `https://calendar.google.com/calendar/render?${params.toString()}`,
+    type: "CREATE_CALENDAR_EVENT",
+    title,
     dateLabel,
+    startIso: start.toISOString(),
+    endIso: end.toISOString(),
+    googleCalendarUrl: `https://calendar.google.com/calendar/render?${params.toString()}`,
+    description,
   };
 }
 
 export async function POST(req: NextRequest) {
   try {
-    // 🛑 LAYER 1 KILL SWITCH
     if (process.env.NEXT_PUBLIC_ENABLE_AI_AGENT === "false") {
       return NextResponse.json<AgentResponsePayload>({
         reply:
           "Kill Switch actif (NEXT_PUBLIC_ENABLE_AI_AGENT=false). Aucun appel externe n'a été effectué.",
         action: { type: "NONE" },
+        personaUsed: "finance",
         provider: "kill-switch-blocked",
         modelUsed: "none",
       });
@@ -177,6 +312,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const userMessage: string = (body.message || "").trim();
     const context: AgentContextPayload = body.context;
+    const persona: AgentPersona =
+      body.persona === "nutrition" ? "nutrition" : "finance";
     const history: ChatTurn[] = Array.isArray(body.history) ? body.history : [];
     const clientHfToken: string | undefined = body.hfToken;
     const clientKillSwitch: boolean = Boolean(body.killSwitch);
@@ -185,6 +322,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json<AgentResponsePayload>({
         reply: "Kill Switch activé. Zéro requête réseau envoyée.",
         action: { type: "NONE" },
+        personaUsed: persona,
         provider: "kill-switch-blocked",
         modelUsed: "none",
       });
@@ -197,7 +335,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Try Hugging Face Qwen 2.5 if user configured an hf_ token
     const apiKey =
       clientHfToken?.trim() || process.env.HUGGINGFACE_API_KEY?.trim();
 
@@ -205,6 +342,7 @@ export async function POST(req: NextRequest) {
       const hfResult = await callCloudLLM(
         userMessage,
         context,
+        persona,
         history,
         HF_ROUTER_URL,
         DEFAULT_HF_MODEL,
@@ -212,14 +350,16 @@ export async function POST(req: NextRequest) {
         "huggingface-qwen2.5"
       );
       if (hfResult) {
-        return NextResponse.json<AgentResponsePayload>(hfResult);
+        return NextResponse.json<AgentResponsePayload>(
+          enforceGuaranteedActions(userMessage, context, hfResult)
+        );
       }
     }
 
-    // 2. Try 100% Free Keyless Open-Source 20B LLM (Zero account/card needed!)
     const freeCloudResult = await callCloudLLM(
       userMessage,
       context,
+      persona,
       history,
       FREE_KEYLESS_LLM_URL,
       "openai-fast",
@@ -227,27 +367,150 @@ export async function POST(req: NextRequest) {
       "free-cloud-llm-20b"
     );
     if (freeCloudResult) {
-      return NextResponse.json<AgentResponsePayload>(freeCloudResult);
+      return NextResponse.json<AgentResponsePayload>(
+        enforceGuaranteedActions(userMessage, context, freeCloudResult)
+      );
     }
 
-    // 3. Offline instant fallback if user has no internet connection
-    const localResult = runSmartLocalAgent(userMessage, context);
+    const localResult = runSmartLocalAgent(userMessage, context, persona);
     return NextResponse.json<AgentResponsePayload>(localResult);
   } catch (err) {
     console.error("[VitalAgent] Error:", err);
     return NextResponse.json<AgentResponsePayload>({
       reply:
-        "Je suis là ! Dis-moi ce que tu veux modifier sur ton budget, tes dépenses ou ton Google Agenda.",
+        "Je suis prêt ! Dis-moi ce que tu souhaites modifier sur ton budget, tes repas Batch Cooking ou ton Google Agenda.",
       action: { type: "NONE" },
+      personaUsed: "finance",
       provider: "local-smart-engine",
-      modelUsed: "vital-local-v3",
+      modelUsed: "vital-local-v5",
     });
   }
+}
+
+function enforceGuaranteedActions(
+  userMessage: string,
+  ctx: AgentContextPayload,
+  result: AgentResponsePayload
+): AgentResponsePayload {
+  const lower = userMessage.toLowerCase();
+
+  // 1. Guarantee Calendar Event creation
+  if (
+    result.action.type !== "CREATE_CALENDAR_EVENT" &&
+    /(?:agenda|google|calendrier|calendar|planifie|rappelle-moi)/i.test(lower)
+  ) {
+    const parsedCal = parseFrenchCalendarRequest(userMessage);
+    const desc = `Planifié par VitalBudget IA • Reste à vivre : ${ctx.disposableLeft.toFixed(2)} € (${ctx.dailyBudgetAllowed.toFixed(2)} €/jour)`;
+    const calAction = buildCalendarEventAction(
+      parsedCal.title,
+      desc,
+      parsedCal.daysOffset,
+      parsedCal.hour,
+      parsedCal.minute
+    );
+    return {
+      ...result,
+      action: calAction,
+    };
+  }
+
+  // 2. Guarantee Batch Cooking Container + DLC creation ("j'ai cuisiné 4 boîtes de...", "nouveau batch...")
+  if (
+    result.action.type === "NONE" &&
+    /(?:cuisiné|préparé|prepare|fait un batch|nouveau batch|boîtes de|boites de|portions de)/i.test(
+      lower
+    ) &&
+    !/mangé|mange|pris/i.test(lower)
+  ) {
+    const portionsMatch = lower.match(/(\d+)\s*(?:portions?|boîtes?|boites?|containers?|plats?)/i);
+    const portions = portionsMatch ? Math.min(12, Math.max(2, parseInt(portionsMatch[1], 10))) : 4;
+    const costMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*€/);
+    const totalCost = costMatch ? parseFloat(costMatch[1].replace(",", ".")) : Number((portions * 2.4).toFixed(2));
+
+    let mealTitle = userMessage
+      .replace(/.*?(?:cuisiné|préparé|fait un batch de|nouveau batch de|portions? de|boîtes? de)\s*/i, "")
+      .replace(/\b\d+\s*(?:€|euros?|portions?|boîtes?)\b/gi, "")
+      .replace(/\b(?:pour|avec|à)\b/gi, "")
+      .trim();
+    if (!mealTitle || mealTitle.length < 3) mealTitle = "Poulet Curry & Riz Complet";
+    mealTitle = mealTitle.charAt(0).toUpperCase() + mealTitle.slice(1);
+
+    const shelfDays = inferShelfLifeDays(mealTitle);
+    const containerPlan = buildContainerPlan(mealTitle, portions, shelfDays);
+
+    return {
+      ...result,
+      personaUsed: "nutrition",
+      action: {
+        type: "ADD_BATCH_MEAL",
+        title: mealTitle,
+        emoji: /saumon|poisson|thon/i.test(mealTitle) ? "🐟" : /lentille|dahl|végé/i.test(mealTitle) ? "🥘" : "🍲",
+        portions,
+        totalCost,
+        shelfLifeDays: shelfDays,
+        vitamins: ["Vit B12", "Magnésium", "Fer", "Protéines"],
+        containerPlan,
+      },
+    };
+  }
+
+  // 3. Guarantee Weekly Grocery Basket recommendation ("courses pour la semaine", "conseilles d'acheter quoi")
+  if (
+    result.action.type === "NONE" &&
+    /(?:courses.*semaine|acheter quoi|quoi acheter|liste de courses|panier hebdo|conseille.*courses)/i.test(
+      lower
+    )
+  ) {
+    const curatedItems = [
+      { name: "Flocons d'Avoine Complets (1kg)", emoji: "🌾", price: 1.85, quantity: 1, unit: "kg" as const, vitamins: ["Magnésium", "Fer", "Fibres"] },
+      { name: "Œufs Plein Air Label Rouge (x12)", emoji: "🥚", price: 3.6, quantity: 12, unit: "unit" as const, vitamins: ["Vit B12", "Vit D", "Choline"] },
+      { name: "Filets de Poulet Fermier (1kg)", emoji: "🍗", price: 9.8, quantity: 1, unit: "kg" as const, vitamins: ["Vit B6", "Zinc", "Protéines"] },
+      { name: "Lentilles Corail Bio (1kg)", emoji: "🫘", price: 2.9, quantity: 1, unit: "kg" as const, vitamins: ["Fer", "Folates", "Magnésium"] },
+      { name: "Brocolis & Épinards Frais (1.5kg)", emoji: "🥦", price: 3.9, quantity: 1.5, unit: "kg" as const, vitamins: ["Vit C", "Vit K", "Calcium"] },
+      { name: "Maquereaux / Sardines (x4 boîtes)", emoji: "🐟", price: 5.2, quantity: 4, unit: "unit" as const, vitamins: ["Oméga-3", "Vit D", "Vit B12"] },
+    ];
+    const totalEstimated = Number(curatedItems.reduce((s, i) => s + i.price, 0).toFixed(2));
+    return {
+      ...result,
+      personaUsed: "nutrition",
+      action: {
+        type: "GENERATE_WEEKLY_GROCERIES",
+        items: curatedItems,
+        totalEstimated,
+      },
+    };
+  }
+
+  // 4. Guarantee Reste à vivre correction
+  if (
+    result.action.type === "NONE" &&
+    /(?:pas\s+\d+\s+mais|corrige|correction|en fait|en vrai|il me reste|reste à vivre|mon solde|pas bon)/i.test(
+      lower
+    )
+  ) {
+    const allNumbers = [...userMessage.matchAll(/(\d+(?:[.,]\d{1,2})?)/g)].map(
+      (m) => parseFloat(m[1].replace(",", "."))
+    );
+    if (allNumbers.length > 0) {
+      const targetAmount = allNumbers[allNumbers.length - 1];
+      return {
+        ...result,
+        action: {
+          type: "SET_DISPOSABLE_LEFT",
+          targetDisposable: Number(targetAmount.toFixed(2)),
+          previousDisposable: ctx.disposableLeft,
+        },
+      };
+    }
+  }
+
+  return result;
 }
 
 async function callCloudLLM(
   userMessage: string,
   ctx: AgentContextPayload,
+  persona: AgentPersona,
   history: ChatTurn[],
   endpointUrl: string,
   modelName: string,
@@ -264,34 +527,42 @@ async function callCloudLLM(
   const mealsSummary = ctx.batchMeals
     .map(
       (m) =>
-        `- id="${m.id}" (${m.title}): ${m.remainingPortions} portions au frigo (${m.costPerPortion.toFixed(2)}€/portion vs ${m.externalMealPrice}€ resto)`
+        `- id="${m.id}" (${m.title}): ${m.remainingPortions}/${m.totalPortions} boîtes au frigo (${m.costPerPortion.toFixed(2)}€/portion, DLC ${m.shelfLifeDays || 3}j)`
     )
     .join("\n");
 
-  const systemPrompt = `Tu es Vital, un véritable assistant financier et quotidien ultra-intelligent, vif, chaleureux et naturel (comme Siri version Apple Intelligence).
-Tu contrôles directement toute l'application VitalBudget de l'utilisateur.
-Tu comprends l'humour, le langage familier, les corrections ("en fait j'ai 359€", "change mon budget courses", "annule ça", "mets sur mon Google Agenda"), et tu réponds de manière humaine et fluide en 1 à 3 phrases max.
+  const personaIntro =
+    persona === "nutrition"
+      ? `Tu es "Vital Chef & Nutritionniste IA", expert en nutrition, optimisation des courses au kilo, Batch Cooking, gestion des boîtes (containers) et calcul automatique des DLC (dates limites de consommation).`
+      : `Tu es "Vital CFO", directeur financier personnel intelligent, expert en gestion de budget, correction de solde en temps réel et synchronisation Google Agenda.`;
+
+  const systemPrompt = `${personaIntro}
+Tu pilotes l'application VitalBudget directement pour l'utilisateur. Sois chaleureux, ultra-intelligent, précis et concis (2 à 3 phrases max).
 
 ÉTAT DU DASHBOARD EN TEMPS RÉEL :
-- Reste à vivre disponible : ${ctx.disposableLeft.toFixed(2)} € (soit ${ctx.dailyBudgetAllowed.toFixed(2)} €/jour pour les ${ctx.remainingDays} jours restants)
-- Revenu mensuel : ${ctx.monthlyIncome} € | Épargne bloquée : ${ctx.savingsTarget} € | Charges fixes : ${ctx.totalFixed} €
+- Reste à vivre disponible : ${ctx.disposableLeft.toFixed(2)} € (${ctx.dailyBudgetAllowed.toFixed(2)} €/jour pour ${ctx.remainingDays} jours)
+- Revenu mensuel : ${ctx.monthlyIncome} € | Épargne : ${ctx.savingsTarget} € | Charges fixes : ${ctx.totalFixed} €
 - Dernière opération : ${ctx.lastTransaction ? `"${ctx.lastTransaction.label}" (${ctx.lastTransaction.amount} €)` : "aucune"}
 - Enveloppes :
 ${envelopesSummary}
-- Plats Batch Cooking au frigo :
+- Plats & Containers Batch Cooking au frigo :
 ${mealsSummary}
 
-TU DOIS RÉPONDRE UNIQUEMENT EN JSON VALIDE avec exactement cette structure :
+RÉPONDS UNIQUEMENT EN JSON VALIDE :
 {
-  "reply": "Ta réponse naturelle, intelligente et personnalisée",
+  "reply": "Ta réponse experte, humaine et personnalisée",
   "action": {
-    "type": "NONE" | "SET_DISPOSABLE_LEFT" | "SET_MONTHLY_INCOME" | "ADD_EXPENSE" | "ADD_INCOME" | "UNDO_LAST_TRANSACTION" | "CONSUME_BATCH_MEAL" | "UPDATE_SAVINGS_TARGET" | "UPDATE_ENVELOPE_BUDGET" | "CREATE_CALENDAR_EVENT",
+    "type": "NONE" | "SET_DISPOSABLE_LEFT" | "SET_MONTHLY_INCOME" | "ADD_EXPENSE" | "ADD_INCOME" | "UNDO_LAST_TRANSACTION" | "CONSUME_BATCH_MEAL" | "ADD_BATCH_MEAL" | "GENERATE_WEEKLY_GROCERIES" | "UPDATE_SAVINGS_TARGET" | "UPDATE_ENVELOPE_BUDGET" | "CREATE_CALENDAR_EVENT",
     "targetDisposable": 0,
     "newIncome": 0,
     "amount": 0,
     "label": "",
     "envelopeId": "env-food" | "env-resto" | "env-health" | "env-mobil" | "env-extra",
     "mealId": "",
+    "batchTitle": "",
+    "batchPortions": 4,
+    "batchTotalCost": 10,
+    "batchShelfLifeDays": 3,
     "newSavingsTarget": 0,
     "newAllocated": 0,
     "newSpent": -1,
@@ -301,17 +572,11 @@ TU DOIS RÉPONDRE UNIQUEMENT EN JSON VALIDE avec exactement cette structure :
   }
 }
 
-COMMENT CHOISIR L'ACTION :
-1. Correction du Reste à vivre / solde global (ex: "le dashboard est pas bon j'ai pas 400 mais 359€", "en vrai il me reste 359€", "mets mon solde à 500€") -> type="SET_DISPOSABLE_LEFT", targetDisposable=359.
-2. Changement du salaire/revenu mensuel (ex: "mon salaire est de 2800€") -> type="SET_MONTHLY_INCOME", newIncome=2800.
-3. Nouvelle dépense (ex: "courses 24€ Lidl", "café 3.50€", "uber 14€") -> type="ADD_EXPENSE", amount=24, label="Courses Lidl", envelopeId="env-food" (ou env-resto, env-health, env-mobil, env-extra).
-4. Nouveau revenu/remboursement ponctuel (ex: "on m'a remboursé 40€") -> type="ADD_INCOME", amount=40, label="Remboursement".
-5. Annuler la dernière opération (ex: "annule la dernière dépense", "efface ça") -> type="UNDO_LAST_TRANSACTION".
-6. Manger une portion du frigo (ex: "j'ai mangé un curry", "enlève une portion") -> type="CONSUME_BATCH_MEAL", mealId=(id du plat).
-7. Modifier l'objectif d'épargne (ex: "mets mon épargne à 650€") -> type="UPDATE_SAVINGS_TARGET", newSavingsTarget=650.
-8. Modifier une enveloppe (ex: "mets mon budget resto à 200€", "j'ai dépensé 80€ en courses au total") -> type="UPDATE_ENVELOPE_BUDGET", envelopeId=..., newAllocated=200 (ou newSpent=80).
-9. Ajouter sur Google Agenda / Calendrier (ex: "mets sur mon Google Agenda courses demain à 14h", "planifie mon batch cooking dimanche à 18h") -> type="CREATE_CALENDAR_EVENT", calendarTitle="...", calendarHour=14, calendarDaysOffset=1.
-10. Question ouverte, conseil, discussion -> type="NONE", réponds intelligemment avec les vrais chiffres de l'utilisateur.`;
+RÈGLES D'ACTIONS :
+- Si l'utilisateur a cuisiné un plat/batch (ex: "j'ai cuisiné 5 boîtes de poulet curry pour 12€"), utilise type="ADD_BATCH_MEAL", batchTitle="Poulet Curry", batchPortions=5, batchTotalCost=12, batchShelfLifeDays=3 (2j poisson, 3j viande, 4j végé).
+- Si l'utilisateur demande quoi acheter pour les courses de la semaine, utilise type="GENERATE_WEEKLY_GROCERIES" et détaille tes conseils nutritionnels dans "reply".
+- Si l'utilisateur corrige son solde/reste à vivre (ex: "j'ai pas 400 mais 359€"), utilise type="SET_DISPOSABLE_LEFT", targetDisposable=359.
+- Si l'utilisateur demande d'ajouter sur Google Agenda / calendrier, utilise type="CREATE_CALENDAR_EVENT".`;
 
   const recentHistory = history.slice(-6).map((h) => ({
     role: h.role,
@@ -340,8 +605,8 @@ COMMENT CHOISIR L'ACTION :
           ...recentHistory,
           { role: "user", content: userMessage },
         ],
-        max_tokens: 450,
-        temperature: 0.3,
+        max_tokens: 500,
+        temperature: 0.25,
       }),
       signal: controller.signal,
     });
@@ -355,13 +620,12 @@ COMMENT CHOISIR L'ACTION :
     if (!jsonMatch) return null;
 
     const parsed = JSON.parse(jsonMatch[0]);
-    const action = normalizeParsedAction(parsed.action, ctx);
+    const action = normalizeParsedAction(parsed.action, userMessage, ctx);
 
     return {
-      reply:
-        parsed.reply ||
-        "C'est fait ! J'ai mis à jour ton dashboard.",
+      reply: parsed.reply || "C'est fait ! Ton espace a été mis à jour.",
       action,
+      personaUsed: persona,
       provider: providerLabel,
       modelUsed: data?.model || modelName,
     };
@@ -373,6 +637,7 @@ COMMENT CHOISIR L'ACTION :
 
 function normalizeParsedAction(
   rawAction: Record<string, unknown> | undefined,
+  userMessage: string,
   ctx: AgentContextPayload
 ): AgentActionType {
   if (!rawAction || typeof rawAction.type !== "string") {
@@ -381,9 +646,43 @@ function normalizeParsedAction(
 
   const actionType = rawAction.type.toUpperCase();
 
+  if (actionType === "ADD_BATCH_MEAL") {
+    const title = String(rawAction.batchTitle || rawAction.label || "Batch Maison").trim();
+    const portions = Math.min(12, Math.max(1, Number(rawAction.batchPortions) || 4));
+    const totalCost = Math.max(1, Number(rawAction.batchTotalCost || rawAction.amount) || Number((portions * 2.5).toFixed(2)));
+    const shelfDays = Number(rawAction.batchShelfLifeDays) || inferShelfLifeDays(title);
+    return {
+      type: "ADD_BATCH_MEAL",
+      title,
+      emoji: /saumon|poisson|thon/i.test(title) ? "🐟" : /lentille|dahl|végé/i.test(title) ? "🥘" : "🍲",
+      portions,
+      totalCost,
+      shelfLifeDays: shelfDays,
+      vitamins: ["Vit B12", "Magnésium", "Fer", "Protéines"],
+      containerPlan: buildContainerPlan(title, portions, shelfDays),
+    };
+  }
+
+  if (actionType === "GENERATE_WEEKLY_GROCERIES") {
+    const curatedItems = [
+      { name: "Flocons d'Avoine Complets (1kg)", emoji: "🌾", price: 1.85, quantity: 1, unit: "kg" as const, vitamins: ["Magnésium", "Fer", "Fibres"] },
+      { name: "Œufs Plein Air Label Rouge (x12)", emoji: "🥚", price: 3.6, quantity: 12, unit: "unit" as const, vitamins: ["Vit B12", "Vit D", "Choline"] },
+      { name: "Filets de Poulet Fermier (1kg)", emoji: "🍗", price: 9.8, quantity: 1, unit: "kg" as const, vitamins: ["Vit B6", "Zinc", "Protéines"] },
+      { name: "Lentilles Corail Bio (1kg)", emoji: "🫘", price: 2.9, quantity: 1, unit: "kg" as const, vitamins: ["Fer", "Folates", "Magnésium"] },
+      { name: "Brocolis & Épinards Frais (1.5kg)", emoji: "🥦", price: 3.9, quantity: 1.5, unit: "kg" as const, vitamins: ["Vit C", "Vit K", "Calcium"] },
+      { name: "Maquereaux / Sardines (x4 boîtes)", emoji: "🐟", price: 5.2, quantity: 4, unit: "unit" as const, vitamins: ["Oméga-3", "Vit D", "Vit B12"] },
+    ];
+    return {
+      type: "GENERATE_WEEKLY_GROCERIES",
+      items: curatedItems,
+      totalEstimated: 27.25,
+    };
+  }
+
   if (
     actionType === "SET_DISPOSABLE_LEFT" ||
-    actionType.includes("DISPOSABLE")
+    actionType.includes("DISPOSABLE") ||
+    actionType.includes("SOLDE")
   ) {
     const target = Number(rawAction.targetDisposable ?? rawAction.amount);
     if (!isNaN(target)) {
@@ -405,7 +704,10 @@ function normalizeParsedAction(
     }
   }
 
-  if (actionType === "UNDO_LAST_TRANSACTION" && ctx.lastTransaction) {
+  if (
+    (actionType === "UNDO_LAST_TRANSACTION" || actionType.includes("UNDO")) &&
+    ctx.lastTransaction
+  ) {
     return {
       type: "UNDO_LAST_TRANSACTION",
       txId: ctx.lastTransaction.id,
@@ -414,29 +716,40 @@ function normalizeParsedAction(
     };
   }
 
-  if (actionType === "CREATE_CALENDAR_EVENT") {
-    const title = String(
-      rawAction.calendarTitle ||
-        rawAction.label ||
-        "Rappel Budget & Batch Cooking"
-    );
-    const daysOffset =
+  if (
+    actionType === "CREATE_CALENDAR_EVENT" ||
+    actionType.includes("CALENDAR") ||
+    actionType.includes("AGENDA")
+  ) {
+    const rawTitle = String(
+      rawAction.calendarTitle || rawAction.label || ""
+    ).trim();
+    const rawHour =
+      rawAction.calendarHour !== undefined
+        ? Number(rawAction.calendarHour)
+        : undefined;
+    const rawDays =
       rawAction.calendarDaysOffset !== undefined
         ? Number(rawAction.calendarDaysOffset)
-        : 1;
-    const hour = Number(rawAction.calendarHour) || 18;
+        : undefined;
+
+    const parsedCal = parseFrenchCalendarRequest(
+      userMessage,
+      rawTitle || undefined,
+      rawHour,
+      rawDays
+    );
     const desc = `Planifié par VitalBudget IA • Reste à vivre actuel : ${ctx.disposableLeft.toFixed(2)} € (${ctx.dailyBudgetAllowed.toFixed(2)} €/jour)`;
-    const cal = buildGoogleCalendarUrl(title, desc, daysOffset, hour);
-    return {
-      type: "CREATE_CALENDAR_EVENT",
-      title,
-      dateLabel: cal.dateLabel,
-      googleCalendarUrl: cal.url,
-      description: desc,
-    };
+    return buildCalendarEventAction(
+      parsedCal.title,
+      desc,
+      parsedCal.daysOffset,
+      parsedCal.hour,
+      parsedCal.minute
+    );
   }
 
-  if (actionType === "ADD_EXPENSE") {
+  if (actionType === "ADD_EXPENSE" || actionType.includes("EXPENSE")) {
     const amount = Number(rawAction.amount);
     if (!isNaN(amount) && amount > 0) {
       const envId = String(rawAction.envelopeId || "env-food");
@@ -463,7 +776,7 @@ function normalizeParsedAction(
     }
   }
 
-  if (actionType === "CONSUME_BATCH_MEAL") {
+  if (actionType === "CONSUME_BATCH_MEAL" || actionType.includes("MEAL")) {
     const targetMeal =
       ctx.batchMeals.find((m) => m.id === rawAction.mealId) ||
       ctx.batchMeals.find((m) => m.remainingPortions > 0);
@@ -507,7 +820,8 @@ function normalizeParsedAction(
         type: "UPDATE_ENVELOPE_BUDGET",
         envelopeId: matchedEnv.id,
         envelopeName: matchedEnv.name,
-        newAllocated: !isNaN(alloc) && alloc > 0 ? Number(alloc.toFixed(2)) : undefined,
+        newAllocated:
+          !isNaN(alloc) && alloc > 0 ? Number(alloc.toFixed(2)) : undefined,
         newSpent: spent,
       };
     }
@@ -516,63 +830,17 @@ function normalizeParsedAction(
   return { type: "NONE" };
 }
 
-/**
- * Offline Fallback when no internet connection is available
- */
 function runSmartLocalAgent(
   userMessage: string,
-  ctx: AgentContextPayload
+  ctx: AgentContextPayload,
+  persona: AgentPersona
 ): AgentResponsePayload {
-  const lower = userMessage.toLowerCase();
-
-  // Direct balance correction
-  if (
-    /(?:pas\s+\d+\s+mais|corrige|correction|en fait|en vrai|il me reste|reste à vivre|mon solde|pas bon)/i.test(
-      lower
-    )
-  ) {
-    const allNumbers = [...userMessage.matchAll(/(\d+(?:[.,]\d{1,2})?)/g)].map(
-      (m) => parseFloat(m[1].replace(",", "."))
-    );
-    if (allNumbers.length > 0) {
-      const targetAmount = allNumbers[allNumbers.length - 1];
-      const newDaily = (targetAmount / Math.max(1, ctx.remainingDays)).toFixed(2);
-      return {
-        reply: `C'est corrigé : ton Reste à vivre est ajusté à ${targetAmount.toFixed(2)} € (${newDaily} €/jour).`,
-        action: {
-          type: "SET_DISPOSABLE_LEFT",
-          targetDisposable: Number(targetAmount.toFixed(2)),
-          previousDisposable: ctx.disposableLeft,
-        },
-        provider: "local-smart-engine",
-        modelUsed: "vital-local-v3",
-      };
-    }
-  }
-
-  // Google Agenda
-  if (/(?:agenda|google|calendrier|calendar|rappelle|planifie)/i.test(lower)) {
-    const eventTitle = "Rappel Budget & Batch Cooking";
-    const desc = `Planifié par VitalBudget • Reste à vivre : ${ctx.disposableLeft.toFixed(2)} €`;
-    const cal = buildGoogleCalendarUrl(eventTitle, desc, 1, 18);
-    return {
-      reply: `Voici ton événement prêt pour Google Agenda (${cal.dateLabel}) :`,
-      action: {
-        type: "CREATE_CALENDAR_EVENT",
-        title: eventTitle,
-        dateLabel: cal.dateLabel,
-        googleCalendarUrl: cal.url,
-        description: desc,
-      },
-      provider: "local-smart-engine",
-      modelUsed: "vital-local-v3",
-    };
-  }
-
-  return {
-    reply: `Il te reste ${ctx.disposableLeft.toFixed(2)} € (${ctx.dailyBudgetAllowed.toFixed(2)} €/jour). Dis-moi ce que tu souhaites modifier ou ajouter !`,
+  const baseResult: AgentResponsePayload = {
+    reply: `Il te reste ${ctx.disposableLeft.toFixed(2)} € (${ctx.dailyBudgetAllowed.toFixed(2)} €/jour). Dis-moi ce que tu souhaites modifier, cuisiner ou planifier !`,
     action: { type: "NONE" },
+    personaUsed: persona,
     provider: "local-smart-engine",
-    modelUsed: "vital-local-v3",
+    modelUsed: "vital-local-v5",
   };
+  return enforceGuaranteedActions(userMessage, ctx, baseResult);
 }
