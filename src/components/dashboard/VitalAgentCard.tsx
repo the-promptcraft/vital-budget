@@ -28,14 +28,12 @@ import type {
   AgentPersona,
   AgentResponsePayload,
   AgentActionType,
-  ChatTurn,
 } from "@/app/api/agent/route";
 
 const DAILY_FREE_LIMIT = 40;
 const STORAGE_KEY_KILL_SWITCH = "vital_agent_kill_switch_v1";
 const STORAGE_KEY_DAILY_COUNT = "vital_agent_daily_count_v1";
 const STORAGE_KEY_HF_TOKEN = "vital_agent_hf_token_v1";
-const STORAGE_KEY_AGENDA_EVENTS = "vital_agent_agenda_events_v1";
 
 const APPLE_SPRING = {
   type: "spring" as const,
@@ -106,6 +104,17 @@ export function VitalAgentCard() {
     fixedExpenses,
     transactions,
     batchMeals,
+    agentPersona: activePersona,
+    agentReply,
+    agentChatHistory: chatHistory,
+    agentLastAction: lastAction,
+    agentLastProvider: lastProvider,
+    savedAgendaEvents: savedEvents,
+    setAgentPersona: setActivePersona,
+    setAgentTurnState,
+    addSavedAgendaEvent,
+    removeSavedAgendaEvent,
+    setDisposableBalance,
     addTransaction,
     deleteTransaction,
     consumeBatchPortion,
@@ -118,8 +127,6 @@ export function VitalAgentCard() {
 
   const envAgentEnabled =
     process.env.NEXT_PUBLIC_ENABLE_AI_AGENT !== "false";
-
-  const [activePersona, setActivePersona] = useState<AgentPersona>("finance");
 
   const [killSwitchActive, setKillSwitchActive] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -158,16 +165,6 @@ export function VitalAgentCard() {
     }
   });
 
-  const [savedEvents, setSavedEvents] = useState<SavedAgendaEvent[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_AGENDA_EVENTS);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
-
   const [notifPermission, setNotifPermission] = useState<string>(() => {
     if (typeof window === "undefined" || !("Notification" in window))
       return "default";
@@ -178,10 +175,6 @@ export function VitalAgentCard() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [agentReply, setAgentReply] = useState<string | null>(null);
-  const [chatHistory, setChatHistory] = useState<ChatTurn[]>([]);
-  const [lastAction, setLastAction] = useState<AgentActionType | null>(null);
-  const [lastProvider, setLastProvider] = useState<string>("free-cloud-llm-20b");
   const [showHfDrawer, setShowHfDrawer] = useState(false);
 
   const startVoiceDictation = () => {
@@ -190,9 +183,10 @@ export function VitalAgentCard() {
       (window as unknown as Record<string, unknown>).SpeechRecognition ||
       (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
     if (!SpeechRec) {
-      setAgentReply(
-        "La dictée vocale est disponible sur Safari (iPhone/Mac) et Chrome."
-      );
+      setAgentTurnState({
+        reply:
+          "La dictée vocale est disponible sur Safari (iPhone/Mac) et Chrome.",
+      });
       return;
     }
     try {
@@ -299,10 +293,14 @@ export function VitalAgentCard() {
       localStorage.setItem(STORAGE_KEY_KILL_SWITCH, String(next));
     } catch {}
     if (next) {
-      setAgentReply("Kill Switch activé. Les 2 agents sont verrouillés (0,00 €).");
-      setLastAction({ type: "NONE" });
+      setAgentTurnState({
+        reply: "Kill Switch activé. Les 2 agents sont verrouillés (0,00 €).",
+        action: { type: "NONE" },
+      });
     } else {
-      setAgentReply("Agents réactivés. Choisis Kora Flow ou Chef Nutritionniste !");
+      setAgentTurnState({
+        reply: "Agents réactivés. Choisis Kora Flow ou Kora Chef !",
+      });
     }
   };
 
@@ -333,15 +331,7 @@ export function VitalAgentCard() {
     const todayYmd = new Date().toISOString().split("T")[0];
 
     if (action.type === "SET_DISPOSABLE_LEFT") {
-      const newRequiredIncome = Number(
-        (
-          action.targetDisposable +
-          totalFixed +
-          savingsTarget +
-          totalVariableSpent
-        ).toFixed(2)
-      );
-      updateBudgetTargets(newRequiredIncome, savingsTarget);
+      setDisposableBalance(action.targetDisposable);
       triggerNativeNotification(
         "Reste à vivre mis à jour",
         `Nouveau solde disponible : ${formatEUR(action.targetDisposable)}`
@@ -423,16 +413,7 @@ export function VitalAgentCard() {
         googleCalendarUrl: action.googleCalendarUrl,
         description: action.description,
       };
-      setSavedEvents((prev) => {
-        const updated = [newEv, ...prev].slice(0, 8);
-        try {
-          localStorage.setItem(
-            STORAGE_KEY_AGENDA_EVENTS,
-            JSON.stringify(updated)
-          );
-        } catch {}
-        return updated;
-      });
+      addSavedAgendaEvent(newEv);
       // Automatically open Google Calendar in a new tab so the user doesn't miss it!
       if (typeof window !== "undefined") {
         window.open(action.googleCalendarUrl, "_blank", "noopener,noreferrer");
@@ -466,17 +447,18 @@ export function VitalAgentCard() {
     }
 
     if (!envAgentEnabled || killSwitchActive) {
-      setAgentReply(
-        "Le Kill Switch est activé. Réactive le bouton en haut à droite pour parler aux agents."
-      );
-      setLastAction({ type: "NONE" });
+      setAgentTurnState({
+        reply:
+          "Le Kill Switch est activé. Réactive le bouton en haut à droite pour parler aux agents.",
+        action: { type: "NONE" },
+      });
       return;
     }
 
     if (dailyCallsUsed >= DAILY_FREE_LIMIT) {
-      setAgentReply(
-        `Limite quotidienne atteinte (${DAILY_FREE_LIMIT}/${DAILY_FREE_LIMIT} entrées aujourd'hui • 0,00 €). Réinitialisation à minuit.`
-      );
+      setAgentTurnState({
+        reply: `Limite quotidienne atteinte (${DAILY_FREE_LIMIT}/${DAILY_FREE_LIMIT} entrées aujourd'hui • 0,00 €). Réinitialisation à minuit.`,
+      });
       return;
     }
 
@@ -534,20 +516,21 @@ export function VitalAgentCard() {
 
       const data: AgentResponsePayload = await res.json();
       incrementDailyCounter();
-      setAgentReply(data.reply);
-      setLastAction(data.action);
-      setLastProvider(data.provider);
-      setChatHistory((prev) => [
-        ...prev.slice(-6),
-        { role: "user", content: trimmed },
-        { role: "assistant", content: data.reply },
-      ]);
 
       if (data.action && data.action.type !== "NONE") {
         executeAgentAction(data.action);
       }
+
+      setAgentTurnState({
+        reply: data.reply,
+        action: data.action,
+        provider: data.provider,
+        userMessage: trimmed,
+      });
     } catch {
-      setAgentReply("Une erreur réseau est survenue, réessaie.");
+      setAgentTurnState({
+        reply: "Une erreur réseau est survenue, réessaie.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -559,13 +542,7 @@ export function VitalAgentCard() {
   };
 
   const removeSavedEvent = (id: string) => {
-    setSavedEvents((prev) => {
-      const next = prev.filter((e) => e.id !== id);
-      try {
-        localStorage.setItem(STORAGE_KEY_AGENDA_EVENTS, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
+    removeSavedAgendaEvent(id);
   };
 
   return (
@@ -907,7 +884,7 @@ export function VitalAgentCard() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setAgentReply(null)}
+                  onClick={() => setAgentTurnState({ reply: null })}
                   className="text-[#94A3B8] hover:text-[#0F172A] p-0.5"
                 >
                   <X className="w-3.5 h-3.5" />

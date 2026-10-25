@@ -387,12 +387,68 @@ export async function POST(req: NextRequest) {
   }
 }
 
+function parseCleanNumber(val: unknown): number {
+  if (typeof val === "number") return val;
+  if (typeof val === "string") {
+    const cleaned = val.replace(/[^0-9.,-]/g, "").replace(",", ".");
+    return parseFloat(cleaned);
+  }
+  return NaN;
+}
+
+function detectEnvelopeFromText(
+  text: string,
+  envelopes: AgentContextPayload["envelopes"]
+): { id: string; name: string } {
+  const lower = text.toLowerCase();
+  let targetId = "env-food";
+
+  if (
+    /resto|restaurant|uber\s*eats|deliveroo|bar|café|cafe|mcdo|sushi|pizza|burger|sortie|verre|bière|boulangerie|brunch|dîner|déjeuner/i.test(
+      lower
+    )
+  ) {
+    targetId = "env-resto";
+  } else if (
+    /pharmacie|médecin|medecin|docteur|santé|sante|mutuelle|dentiste|sport|salle|fitness|complément|vitamine|ostéo|kiné/i.test(
+      lower
+    )
+  ) {
+    targetId = "env-health";
+  } else if (
+    /essence|train|sncf|métro|metro|navigo|uber|taxi|bus|parking|péage|peage|voiture|vélo|velo|transport|carburant/i.test(
+      lower
+    )
+  ) {
+    targetId = "env-mobil";
+  } else if (
+    /shopping|amazon|cadeau|ciné|cine|loisir|vêtement|vetement|fnac|zara|abonnement|netflix|spotify|divers|extra/i.test(
+      lower
+    )
+  ) {
+    targetId = "env-extra";
+  } else if (
+    /courses|lidl|carrefour|aldi|leclerc|auchan|intermarché|monoprix|supermarché|marché|boucherie|alimentation|nourriture|épicerie/i.test(
+      lower
+    )
+  ) {
+    targetId = "env-food";
+  }
+
+  const found = envelopes.find((e) => e.id === targetId) || envelopes[0];
+  return {
+    id: found?.id || "env-food",
+    name: found?.name || "Courses & Alimentation",
+  };
+}
+
 function enforceGuaranteedActions(
   userMessage: string,
   ctx: AgentContextPayload,
   result: AgentResponsePayload
 ): AgentResponsePayload {
   const lower = userMessage.toLowerCase();
+  const isLocalFallback = result.provider === "local-smart-engine";
 
   // 1. Guarantee Calendar Event creation
   if (
@@ -410,29 +466,64 @@ function enforceGuaranteedActions(
     );
     return {
       ...result,
+      reply: isLocalFallback
+        ? `C'est programmé ! J'ai préparé ton événement « ${calAction.title} » pour ${calAction.dateLabel} sur ton Google Agenda.`
+        : result.reply,
       action: calAction,
     };
   }
 
-  // 2. Guarantee Batch Cooking Container + DLC creation ("j'ai cuisiné 4 boîtes de...", "nouveau batch...")
+  // 2. Guarantee Undo / Cancel Last Transaction
   if (
     result.action.type === "NONE" &&
-    /(?:cuisiné|préparé|prepare|fait un batch|nouveau batch|boîtes de|boites de|portions de)/i.test(
+    /(?:annule|supprime\s+la\s+dernière|efface\s+la\s+dernière|erreur\s+sur\s+la\s+dernière|retire\s+la\s+dernière)/i.test(
       lower
     ) &&
-    !/mangé|mange|pris/i.test(lower)
+    ctx.lastTransaction
   ) {
-    const portionsMatch = lower.match(/(\d+)\s*(?:portions?|boîtes?|boites?|containers?|plats?)/i);
-    const portions = portionsMatch ? Math.min(12, Math.max(2, parseInt(portionsMatch[1], 10))) : 4;
-    const costMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*€/);
-    const totalCost = costMatch ? parseFloat(costMatch[1].replace(",", ".")) : Number((portions * 2.4).toFixed(2));
+    return {
+      ...result,
+      reply: isLocalFallback
+        ? `C'est annulé ! J'ai supprimé la dernière opération « ${ctx.lastTransaction.label} » (${ctx.lastTransaction.amount.toFixed(2)} €).`
+        : result.reply,
+      action: {
+        type: "UNDO_LAST_TRANSACTION",
+        txId: ctx.lastTransaction.id,
+        txLabel: ctx.lastTransaction.label,
+        txAmount: ctx.lastTransaction.amount,
+      },
+    };
+  }
+
+  // 3. Guarantee Batch Cooking Container + DLC creation ("j'ai cuisiné 4 boîtes de...", "nouveau batch...")
+  if (
+    result.action.type === "NONE" &&
+    /(?:cuisiné|préparé|prepare|fait un batch|nouveau batch|boîtes de|boites de|portions de|tupperware)/i.test(
+      lower
+    ) &&
+    !/mangé|mange|pris|consommé/i.test(lower)
+  ) {
+    const portionsMatch = lower.match(
+      /(\d+)\s*(?:portions?|boîtes?|boites?|containers?|plats?|tupperwares?)/i
+    );
+    const portions = portionsMatch
+      ? Math.min(12, Math.max(2, parseInt(portionsMatch[1], 10)))
+      : 4;
+    const costMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(?:€|eur|euros?)/i);
+    const totalCost = costMatch
+      ? parseFloat(costMatch[1].replace(",", "."))
+      : Number((portions * 2.4).toFixed(2));
 
     let mealTitle = userMessage
-      .replace(/.*?(?:cuisiné|préparé|fait un batch de|nouveau batch de|portions? de|boîtes? de)\s*/i, "")
-      .replace(/\b\d+\s*(?:€|euros?|portions?|boîtes?)\b/gi, "")
+      .replace(
+        /.*?(?:cuisiné|préparé|fait un batch de|nouveau batch de|portions? de|boîtes? de|boites? de)\s*/i,
+        ""
+      )
+      .replace(/\b\d+\s*(?:€|eur|euros?|portions?|boîtes?|boites?)\b/gi, "")
       .replace(/\b(?:pour|avec|à)\b/gi, "")
       .trim();
-    if (!mealTitle || mealTitle.length < 3) mealTitle = "Poulet Curry & Riz Complet";
+    if (!mealTitle || mealTitle.length < 3)
+      mealTitle = "Poulet Curry & Riz Complet";
     mealTitle = mealTitle.charAt(0).toUpperCase() + mealTitle.slice(1);
 
     const shelfDays = inferShelfLifeDays(mealTitle);
@@ -441,10 +532,17 @@ function enforceGuaranteedActions(
     return {
       ...result,
       personaUsed: "nutrition",
+      reply: isLocalFallback
+        ? `Bravo chef ! J'ai enregistré ${portions} boîtes de « ${mealTitle} » (${(totalCost / portions).toFixed(2)} €/portion) avec une DLC automatique de ${shelfDays} jours et ton planning par boîte.`
+        : result.reply,
       action: {
         type: "ADD_BATCH_MEAL",
         title: mealTitle,
-        emoji: /saumon|poisson|thon/i.test(mealTitle) ? "🐟" : /lentille|dahl|végé/i.test(mealTitle) ? "🥘" : "🍲",
+        emoji: /saumon|poisson|thon/i.test(mealTitle)
+          ? "🐟"
+          : /lentille|dahl|végé/i.test(mealTitle)
+          ? "🥘"
+          : "🍲",
         portions,
         totalCost,
         shelfLifeDays: shelfDays,
@@ -454,25 +552,108 @@ function enforceGuaranteedActions(
     };
   }
 
-  // 3. Guarantee Weekly Grocery Basket recommendation ("courses pour la semaine", "conseilles d'acheter quoi")
+  // 4. Guarantee Batch Meal Consumption ("j'ai mangé une boîte", "pris mon curry", "-1 boîte")
   if (
     result.action.type === "NONE" &&
-    /(?:courses.*semaine|acheter quoi|quoi acheter|liste de courses|panier hebdo|conseille.*courses)/i.test(
+    /(?:mangé|mange|consommé|pris\s+une\s+boîte|pris\s+mon\s+batch|pris\s+un\s+plat|-1\s*boîte)/i.test(
+      lower
+    ) &&
+    ctx.batchMeals.some((m) => m.remainingPortions > 0)
+  ) {
+    const matchedMeal =
+      ctx.batchMeals.find(
+        (m) =>
+          m.remainingPortions > 0 &&
+          lower.includes(m.title.toLowerCase().split(" ")[0])
+      ) || ctx.batchMeals.find((m) => m.remainingPortions > 0)!;
+
+    const saved = Math.max(
+      0,
+      Number(
+        (matchedMeal.externalMealPrice - matchedMeal.costPerPortion).toFixed(2)
+      )
+    );
+    return {
+      ...result,
+      personaUsed: "nutrition",
+      reply: isLocalFallback
+        ? `Bon appétit ! J'ai déduit 1 boîte de « ${matchedMeal.title} » (il t'en reste ${matchedMeal.remainingPortions - 1} au frigo). Tu viens d'économiser ${saved.toFixed(2)} € !`
+        : result.reply,
+      action: {
+        type: "CONSUME_BATCH_MEAL",
+        mealId: matchedMeal.id,
+        mealTitle: matchedMeal.title,
+        savedAmount: saved,
+      },
+    };
+  }
+
+  // 5. Guarantee Weekly Grocery Basket recommendation ("courses pour la semaine", "conseilles d'acheter quoi")
+  if (
+    result.action.type === "NONE" &&
+    /(?:courses.*semaine|acheter quoi|quoi acheter|liste de courses|panier hebdo|conseille.*courses|ajoute.*courses)/i.test(
       lower
     )
   ) {
     const curatedItems = [
-      { name: "Flocons d'Avoine Complets (1kg)", emoji: "🌾", price: 1.85, quantity: 1, unit: "kg" as const, vitamins: ["Magnésium", "Fer", "Fibres"] },
-      { name: "Œufs Plein Air Label Rouge (x12)", emoji: "🥚", price: 3.6, quantity: 12, unit: "unit" as const, vitamins: ["Vit B12", "Vit D", "Choline"] },
-      { name: "Filets de Poulet Fermier (1kg)", emoji: "🍗", price: 9.8, quantity: 1, unit: "kg" as const, vitamins: ["Vit B6", "Zinc", "Protéines"] },
-      { name: "Lentilles Corail Bio (1kg)", emoji: "🫘", price: 2.9, quantity: 1, unit: "kg" as const, vitamins: ["Fer", "Folates", "Magnésium"] },
-      { name: "Brocolis & Épinards Frais (1.5kg)", emoji: "🥦", price: 3.9, quantity: 1.5, unit: "kg" as const, vitamins: ["Vit C", "Vit K", "Calcium"] },
-      { name: "Maquereaux / Sardines (x4 boîtes)", emoji: "🐟", price: 5.2, quantity: 4, unit: "unit" as const, vitamins: ["Oméga-3", "Vit D", "Vit B12"] },
+      {
+        name: "Flocons d'Avoine Complets (1kg)",
+        emoji: "🌾",
+        price: 1.85,
+        quantity: 1,
+        unit: "kg" as const,
+        vitamins: ["Magnésium", "Fer", "Fibres"],
+      },
+      {
+        name: "Œufs Plein Air Label Rouge (x12)",
+        emoji: "🥚",
+        price: 3.6,
+        quantity: 12,
+        unit: "unit" as const,
+        vitamins: ["Vit B12", "Vit D", "Choline"],
+      },
+      {
+        name: "Filets de Poulet Fermier (1kg)",
+        emoji: "🍗",
+        price: 9.8,
+        quantity: 1,
+        unit: "kg" as const,
+        vitamins: ["Vit B6", "Zinc", "Protéines"],
+      },
+      {
+        name: "Lentilles Corail Bio (1kg)",
+        emoji: "🫘",
+        price: 2.9,
+        quantity: 1,
+        unit: "kg" as const,
+        vitamins: ["Fer", "Folates", "Magnésium"],
+      },
+      {
+        name: "Brocolis & Épinards Frais (1.5kg)",
+        emoji: "🥦",
+        price: 3.9,
+        quantity: 1.5,
+        unit: "kg" as const,
+        vitamins: ["Vit C", "Vit K", "Calcium"],
+      },
+      {
+        name: "Maquereaux / Sardines (x4 boîtes)",
+        emoji: "🐟",
+        price: 5.2,
+        quantity: 4,
+        unit: "unit" as const,
+        vitamins: ["Oméga-3", "Vit D", "Vit B12"],
+      },
     ];
-    const totalEstimated = Number(curatedItems.reduce((s, i) => s + i.price, 0).toFixed(2));
+    const totalEstimated = Number(
+      curatedItems.reduce((s, i) => s + i.price, 0).toFixed(2)
+    );
     return {
       ...result,
       personaUsed: "nutrition",
+      reply: isLocalFallback
+        ? `Voici ta sélection nutritionnelle de la semaine : 6 produits bruts ultra-denses en vitamines et protéines pour seulement ${totalEstimated.toFixed(2)} € au total. Je les ai ajoutés dans ton onglet Courses !`
+        : result.reply,
       action: {
         type: "GENERATE_WEEKLY_GROCERIES",
         items: curatedItems,
@@ -481,10 +662,90 @@ function enforceGuaranteedActions(
     };
   }
 
-  // 4. Guarantee Reste à vivre correction
+  // 6. Guarantee Reste à vivre / Balance correction ("j'ai pas 400 mais 359€", "il me reste 359€", "mon solde est 359€")
   if (
     result.action.type === "NONE" &&
-    /(?:pas\s+\d+\s+mais|corrige|correction|en fait|en vrai|il me reste|reste à vivre|mon solde|pas bon)/i.test(
+    /(?:pas\s+\d+\s+mais|corrige|correction|en fait|en vrai|il me reste|reste à vivre|mon solde|pas bon|solde\s+est|solde\s+à|budget\s+à)/i.test(
+      lower
+    ) &&
+    !/dépensé|payé|acheté/i.test(lower)
+  ) {
+    const allNumbers = [...userMessage.matchAll(/(\d+(?:[.,]\d{1,2})?)/g)].map(
+      (m) => parseFloat(m[1].replace(",", "."))
+    );
+    if (allNumbers.length > 0) {
+      const targetAmount = Number(
+        allNumbers[allNumbers.length - 1].toFixed(2)
+      );
+      const newDaily = Number(
+        (targetAmount / Math.max(1, ctx.remainingDays)).toFixed(2)
+      );
+      return {
+        ...result,
+        reply: isLocalFallback
+          ? `C'est corrigé immédiatement ! Ton reste à vivre est désormais fixé à ${targetAmount.toFixed(2)} € (soit ${newDaily.toFixed(2)} €/jour pour les ${ctx.remainingDays} jours restants).`
+          : result.reply,
+        action: {
+          type: "SET_DISPOSABLE_LEFT",
+          targetDisposable: targetAmount,
+          previousDisposable: ctx.disposableLeft,
+        },
+      };
+    }
+  }
+
+  // 7. Guarantee Monthly Salary update ("mon salaire est de 2400€", "salaire 2500€")
+  if (
+    result.action.type === "NONE" &&
+    /(?:salaire|revenu\s+mensuel|je\s+gagne|paye\s+mensuelle)/i.test(lower)
+  ) {
+    const allNumbers = [...userMessage.matchAll(/(\d+(?:[.,]\d{1,2})?)/g)].map(
+      (m) => parseFloat(m[1].replace(",", "."))
+    );
+    if (allNumbers.length > 0) {
+      const newIncome = Number(allNumbers[allNumbers.length - 1].toFixed(2));
+      return {
+        ...result,
+        reply: isLocalFallback
+          ? `Ton revenu mensuel net a été mis à jour à ${newIncome.toFixed(2)} € et sauvegardé dans ton budget.`
+          : result.reply,
+        action: {
+          type: "SET_MONTHLY_INCOME",
+          newIncome,
+        },
+      };
+    }
+  }
+
+  // 8. Guarantee Savings Target update ("épargne 500€", "objectif épargne 400€")
+  if (
+    result.action.type === "NONE" &&
+    /(?:épargne|epargne|mettre\s+de\s+côté)/i.test(lower)
+  ) {
+    const allNumbers = [...userMessage.matchAll(/(\d+(?:[.,]\d{1,2})?)/g)].map(
+      (m) => parseFloat(m[1].replace(",", "."))
+    );
+    if (allNumbers.length > 0) {
+      const newSavingsTarget = Number(
+        allNumbers[allNumbers.length - 1].toFixed(2)
+      );
+      return {
+        ...result,
+        reply: isLocalFallback
+          ? `Objectif d'épargne mis à jour à ${newSavingsTarget.toFixed(2)} €/mois.`
+          : result.reply,
+        action: {
+          type: "UPDATE_SAVINGS_TARGET",
+          newSavingsTarget,
+        },
+      };
+    }
+  }
+
+  // 9. Guarantee Income / Entrée d'argent ("entrée de 200€", "j'ai reçu 150€", "virement de 100€", "prime 300€", "+50€")
+  if (
+    result.action.type === "NONE" &&
+    /(?:entrée\s+de|entree\s+de|nouvelle\s+entrée|j'ai\s+reçu|reçu|virement|remboursement|prime|bonus|\+\s*\d+)/i.test(
       lower
     )
   ) {
@@ -492,15 +753,75 @@ function enforceGuaranteedActions(
       (m) => parseFloat(m[1].replace(",", "."))
     );
     if (allNumbers.length > 0) {
-      const targetAmount = allNumbers[allNumbers.length - 1];
+      const amount = Number(allNumbers[allNumbers.length - 1].toFixed(2));
+      const cleanLabel =
+        userMessage
+          .replace(/(\+|-)?\s*\d+(?:[.,]\d{1,2})?\s*(?:€|eur|euros?)?/gi, "")
+          .replace(/^(?:j'ai\s+reçu|reçu|ajoute\s+une\s+entrée\s+de|entrée\s+de|entree\s+de)\s*/i, "")
+          .trim() || "Entrée / Revenu";
+      const label = cleanLabel.charAt(0).toUpperCase() + cleanLabel.slice(1);
+      const nextDisp = Number((ctx.disposableLeft + amount).toFixed(2));
       return {
         ...result,
+        reply: isLocalFallback
+          ? `Entrée enregistrée : +${amount.toFixed(2)} € (${label}). Ton nouveau reste à vivre passe à ${nextDisp.toFixed(2)} € !`
+          : result.reply,
         action: {
-          type: "SET_DISPOSABLE_LEFT",
-          targetDisposable: Number(targetAmount.toFixed(2)),
-          previousDisposable: ctx.disposableLeft,
+          type: "ADD_INCOME",
+          amount,
+          label,
         },
       };
+    }
+  }
+
+  // 10. Guarantee Expense Entry ("j'ai dépensé 25€ de courses", "resto 18€", "courses 42€", "payé 15€", "-20€")
+  if (result.action.type === "NONE") {
+    const amountMatch = userMessage.match(
+      /(?:-\s*)?(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur|euros?)\b/i
+    ) ||
+      (/(?:dépensé|depense|payé|paye|acheté|achete|pris|coûté|coute|facture|addition|courses|resto|restaurant|uber|lidl|carrefour|aldi|leclerc|pharmacie|essence|café|cinema|shopping)/i.test(
+        lower
+      )
+        ? userMessage.match(/(\d+(?:[.,]\d{1,2})?)/)
+        : null);
+
+    if (amountMatch) {
+      const amount = Number(
+        parseFloat(amountMatch[1].replace(",", ".")).toFixed(2)
+      );
+      if (amount > 0 && amount < 20000) {
+        const targetEnv = detectEnvelopeFromText(userMessage, ctx.envelopes);
+        let label = userMessage
+          .replace(/(?:-\s*)?\d+(?:[.,]\d{1,2})?\s*(?:€|eur|euros?)?/gi, "")
+          .replace(
+            /\b(?:j'ai|dépensé|depense|payé|paye|acheté|achete|pour|au|à|la|le|les|des|du|de|chez|en|une|un|ajoute|mets)\b/gi,
+            " "
+          )
+          .replace(/\s+/g, " ")
+          .trim();
+
+        if (!label || label.length < 2) {
+          label = targetEnv.name;
+        } else {
+          label = label.charAt(0).toUpperCase() + label.slice(1);
+        }
+
+        const nextDisp = Number((ctx.disposableLeft - amount).toFixed(2));
+        return {
+          ...result,
+          reply: isLocalFallback
+            ? `C'est noté ! J'ai enregistré -${amount.toFixed(2)} € (« ${label} ») dans l'enveloppe ${targetEnv.name}. Il te reste ${nextDisp.toFixed(2)} € disponible.`
+            : result.reply,
+          action: {
+            type: "ADD_EXPENSE",
+            amount,
+            label,
+            envelopeId: targetEnv.id,
+            envelopeName: targetEnv.name,
+          },
+        };
+      }
     }
   }
 
@@ -591,7 +912,7 @@ RÈGLES D'ACTIONS :
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 14000);
+  const timeout = setTimeout(() => controller.abort(), 4200);
 
   try {
     const response = await fetch(endpointUrl, {
@@ -605,8 +926,8 @@ RÈGLES D'ACTIONS :
           ...recentHistory,
           { role: "user", content: userMessage },
         ],
-        max_tokens: 500,
-        temperature: 0.25,
+        max_tokens: 450,
+        temperature: 0.2,
       }),
       signal: controller.signal,
     });
@@ -647,14 +968,29 @@ function normalizeParsedAction(
   const actionType = rawAction.type.toUpperCase();
 
   if (actionType === "ADD_BATCH_MEAL") {
-    const title = String(rawAction.batchTitle || rawAction.label || "Batch Maison").trim();
-    const portions = Math.min(12, Math.max(1, Number(rawAction.batchPortions) || 4));
-    const totalCost = Math.max(1, Number(rawAction.batchTotalCost || rawAction.amount) || Number((portions * 2.5).toFixed(2)));
-    const shelfDays = Number(rawAction.batchShelfLifeDays) || inferShelfLifeDays(title);
+    const title = String(
+      rawAction.batchTitle || rawAction.label || "Batch Maison"
+    ).trim();
+    const portions = Math.min(
+      12,
+      Math.max(1, parseCleanNumber(rawAction.batchPortions) || 4)
+    );
+    const totalCost = Math.max(
+      1,
+      parseCleanNumber(rawAction.batchTotalCost ?? rawAction.amount) ||
+        Number((portions * 2.5).toFixed(2))
+    );
+    const shelfDays =
+      parseCleanNumber(rawAction.batchShelfLifeDays) ||
+      inferShelfLifeDays(title);
     return {
       type: "ADD_BATCH_MEAL",
       title,
-      emoji: /saumon|poisson|thon/i.test(title) ? "🐟" : /lentille|dahl|végé/i.test(title) ? "🥘" : "🍲",
+      emoji: /saumon|poisson|thon/i.test(title)
+        ? "🐟"
+        : /lentille|dahl|végé/i.test(title)
+        ? "🥘"
+        : "🍲",
       portions,
       totalCost,
       shelfLifeDays: shelfDays,
@@ -665,12 +1001,54 @@ function normalizeParsedAction(
 
   if (actionType === "GENERATE_WEEKLY_GROCERIES") {
     const curatedItems = [
-      { name: "Flocons d'Avoine Complets (1kg)", emoji: "🌾", price: 1.85, quantity: 1, unit: "kg" as const, vitamins: ["Magnésium", "Fer", "Fibres"] },
-      { name: "Œufs Plein Air Label Rouge (x12)", emoji: "🥚", price: 3.6, quantity: 12, unit: "unit" as const, vitamins: ["Vit B12", "Vit D", "Choline"] },
-      { name: "Filets de Poulet Fermier (1kg)", emoji: "🍗", price: 9.8, quantity: 1, unit: "kg" as const, vitamins: ["Vit B6", "Zinc", "Protéines"] },
-      { name: "Lentilles Corail Bio (1kg)", emoji: "🫘", price: 2.9, quantity: 1, unit: "kg" as const, vitamins: ["Fer", "Folates", "Magnésium"] },
-      { name: "Brocolis & Épinards Frais (1.5kg)", emoji: "🥦", price: 3.9, quantity: 1.5, unit: "kg" as const, vitamins: ["Vit C", "Vit K", "Calcium"] },
-      { name: "Maquereaux / Sardines (x4 boîtes)", emoji: "🐟", price: 5.2, quantity: 4, unit: "unit" as const, vitamins: ["Oméga-3", "Vit D", "Vit B12"] },
+      {
+        name: "Flocons d'Avoine Complets (1kg)",
+        emoji: "🌾",
+        price: 1.85,
+        quantity: 1,
+        unit: "kg" as const,
+        vitamins: ["Magnésium", "Fer", "Fibres"],
+      },
+      {
+        name: "Œufs Plein Air Label Rouge (x12)",
+        emoji: "🥚",
+        price: 3.6,
+        quantity: 12,
+        unit: "unit" as const,
+        vitamins: ["Vit B12", "Vit D", "Choline"],
+      },
+      {
+        name: "Filets de Poulet Fermier (1kg)",
+        emoji: "🍗",
+        price: 9.8,
+        quantity: 1,
+        unit: "kg" as const,
+        vitamins: ["Vit B6", "Zinc", "Protéines"],
+      },
+      {
+        name: "Lentilles Corail Bio (1kg)",
+        emoji: "🫘",
+        price: 2.9,
+        quantity: 1,
+        unit: "kg" as const,
+        vitamins: ["Fer", "Folates", "Magnésium"],
+      },
+      {
+        name: "Brocolis & Épinards Frais (1.5kg)",
+        emoji: "🥦",
+        price: 3.9,
+        quantity: 1.5,
+        unit: "kg" as const,
+        vitamins: ["Vit C", "Vit K", "Calcium"],
+      },
+      {
+        name: "Maquereaux / Sardines (x4 boîtes)",
+        emoji: "🐟",
+        price: 5.2,
+        quantity: 4,
+        unit: "unit" as const,
+        vitamins: ["Oméga-3", "Vit D", "Vit B12"],
+      },
     ];
     return {
       type: "GENERATE_WEEKLY_GROCERIES",
@@ -684,7 +1062,9 @@ function normalizeParsedAction(
     actionType.includes("DISPOSABLE") ||
     actionType.includes("SOLDE")
   ) {
-    const target = Number(rawAction.targetDisposable ?? rawAction.amount);
+    const target = parseCleanNumber(
+      rawAction.targetDisposable ?? rawAction.amount
+    );
     if (!isNaN(target)) {
       return {
         type: "SET_DISPOSABLE_LEFT",
@@ -695,7 +1075,7 @@ function normalizeParsedAction(
   }
 
   if (actionType === "SET_MONTHLY_INCOME") {
-    const newInc = Number(rawAction.newIncome ?? rawAction.amount);
+    const newInc = parseCleanNumber(rawAction.newIncome ?? rawAction.amount);
     if (!isNaN(newInc) && newInc >= 0) {
       return {
         type: "SET_MONTHLY_INCOME",
@@ -726,18 +1106,18 @@ function normalizeParsedAction(
     ).trim();
     const rawHour =
       rawAction.calendarHour !== undefined
-        ? Number(rawAction.calendarHour)
+        ? parseCleanNumber(rawAction.calendarHour)
         : undefined;
     const rawDays =
       rawAction.calendarDaysOffset !== undefined
-        ? Number(rawAction.calendarDaysOffset)
+        ? parseCleanNumber(rawAction.calendarDaysOffset)
         : undefined;
 
     const parsedCal = parseFrenchCalendarRequest(
       userMessage,
       rawTitle || undefined,
-      rawHour,
-      rawDays
+      !isNaN(rawHour as number) ? rawHour : undefined,
+      !isNaN(rawDays as number) ? rawDays : undefined
     );
     const desc = `Planifié par Kora IA • Reste à vivre actuel : ${ctx.disposableLeft.toFixed(2)} € (${ctx.dailyBudgetAllowed.toFixed(2)} €/jour)`;
     return buildCalendarEventAction(
@@ -750,28 +1130,29 @@ function normalizeParsedAction(
   }
 
   if (actionType === "ADD_EXPENSE" || actionType.includes("EXPENSE")) {
-    const amount = Number(rawAction.amount);
+    const amount = parseCleanNumber(rawAction.amount);
     if (!isNaN(amount) && amount > 0) {
-      const envId = String(rawAction.envelopeId || "env-food");
-      const matchedEnv =
-        ctx.envelopes.find((e) => e.id === envId) || ctx.envelopes[0];
+      const detected = detectEnvelopeFromText(
+        `${userMessage} ${String(rawAction.envelopeId || "")}`,
+        ctx.envelopes
+      );
       return {
         type: "ADD_EXPENSE",
         amount: Number(amount.toFixed(2)),
-        label: String(rawAction.label || "Dépense"),
-        envelopeId: matchedEnv?.id || "env-food",
-        envelopeName: matchedEnv?.name || "Courses & Alimentation",
+        label: String(rawAction.label || detected.name),
+        envelopeId: detected.id,
+        envelopeName: detected.name,
       };
     }
   }
 
   if (actionType === "ADD_INCOME") {
-    const amount = Number(rawAction.amount);
+    const amount = parseCleanNumber(rawAction.amount);
     if (!isNaN(amount) && amount > 0) {
       return {
         type: "ADD_INCOME",
         amount: Number(amount.toFixed(2)),
-        label: String(rawAction.label || "Revenu"),
+        label: String(rawAction.label || "Entrée / Revenu"),
       };
     }
   }
@@ -797,7 +1178,9 @@ function normalizeParsedAction(
   }
 
   if (actionType === "UPDATE_SAVINGS_TARGET") {
-    const newTarget = Number(rawAction.newSavingsTarget ?? rawAction.amount);
+    const newTarget = parseCleanNumber(
+      rawAction.newSavingsTarget ?? rawAction.amount
+    );
     if (!isNaN(newTarget) && newTarget >= 0) {
       return {
         type: "UPDATE_SAVINGS_TARGET",
@@ -807,24 +1190,24 @@ function normalizeParsedAction(
   }
 
   if (actionType === "UPDATE_ENVELOPE_BUDGET") {
-    const alloc = Number(rawAction.newAllocated ?? rawAction.amount);
+    const alloc = parseCleanNumber(rawAction.newAllocated ?? rawAction.amount);
     const spent =
-      rawAction.newSpent !== undefined && Number(rawAction.newSpent) >= 0
-        ? Number(rawAction.newSpent)
+      rawAction.newSpent !== undefined &&
+      parseCleanNumber(rawAction.newSpent) >= 0
+        ? parseCleanNumber(rawAction.newSpent)
         : undefined;
-    const envId = String(rawAction.envelopeId || "env-food");
-    const matchedEnv =
-      ctx.envelopes.find((e) => e.id === envId) || ctx.envelopes[0];
-    if (matchedEnv) {
-      return {
-        type: "UPDATE_ENVELOPE_BUDGET",
-        envelopeId: matchedEnv.id,
-        envelopeName: matchedEnv.name,
-        newAllocated:
-          !isNaN(alloc) && alloc > 0 ? Number(alloc.toFixed(2)) : undefined,
-        newSpent: spent,
-      };
-    }
+    const detected = detectEnvelopeFromText(
+      `${userMessage} ${String(rawAction.envelopeId || "")}`,
+      ctx.envelopes
+    );
+    return {
+      type: "UPDATE_ENVELOPE_BUDGET",
+      envelopeId: detected.id,
+      envelopeName: detected.name,
+      newAllocated:
+        !isNaN(alloc) && alloc > 0 ? Number(alloc.toFixed(2)) : undefined,
+      newSpent: spent,
+    };
   }
 
   return { type: "NONE" };

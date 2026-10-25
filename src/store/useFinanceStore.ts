@@ -27,8 +27,23 @@ import {
   ScannedReceiptItem,
 } from "@/lib/utils";
 import { getSupabaseClient } from "@/lib/supabase";
+import type {
+  AgentActionType,
+  AgentPersona,
+  ChatTurn,
+} from "@/app/api/agent/route";
 
 export type ActiveTab = "stocks" | "groceries" | "batch" | "analytics";
+
+export interface SavedAgendaEventItem {
+  id: string;
+  title: string;
+  dateLabel: string;
+  startIso: string;
+  endIso: string;
+  googleCalendarUrl: string;
+  description: string;
+}
 
 export interface FinanceStoreState {
   activeTab: ActiveTab;
@@ -46,16 +61,37 @@ export interface FinanceStoreState {
   supabaseStatus: "local" | "syncing" | "connected" | "error";
   lastSyncedAt: string | null;
 
+  // Persisted AI Agent State (survives tab switches & page reloads)
+  agentPersona: AgentPersona;
+  agentReply: string | null;
+  agentChatHistory: ChatTurn[];
+  agentLastAction: AgentActionType | null;
+  agentLastProvider: string;
+  savedAgendaEvents: SavedAgendaEventItem[];
+
   // Navigation & UI
   setActiveTab: (tab: ActiveTab) => void;
   setQuickAddOpen: (open: boolean) => void;
   setCurrentMonthLabel: (label: string) => void;
+
+  // Agent State Actions
+  setAgentPersona: (persona: AgentPersona) => void;
+  setAgentTurnState: (payload: {
+    reply: string | null;
+    action?: AgentActionType | null;
+    provider?: string;
+    userMessage?: string;
+  }) => void;
+  clearAgentHistory: () => void;
+  addSavedAgendaEvent: (ev: SavedAgendaEventItem) => void;
+  removeSavedAgendaEvent: (id: string) => void;
 
   // Monthly Lifecycle & Real Data Controls
   startNewMonth: (nextMonthLabel: string) => void;
   clearAllDemoData: () => void;
 
   // Budget & Transactions
+  setDisposableBalance: (targetDisposable: number) => void;
   updateBudgetTargets: (income: number, savingsTarget: number) => void;
   addTransaction: (
     tx: Omit<Transaction, "id"> & { replaceBaseSalary?: boolean }
@@ -128,9 +164,108 @@ export const useFinanceStore = create<FinanceStoreState>()(
       supabaseStatus: "local",
       lastSyncedAt: null,
 
+      agentPersona: "finance",
+      agentReply: null,
+      agentChatHistory: [],
+      agentLastAction: null,
+      agentLastProvider: "free-cloud-llm-20b",
+      savedAgendaEvents: [],
+
       setActiveTab: (tab) => set({ activeTab: tab }),
       setQuickAddOpen: (open) => set({ isQuickAddOpen: open }),
       setCurrentMonthLabel: (label) => set({ currentMonthLabel: label }),
+
+      setAgentPersona: (persona) => set({ agentPersona: persona }),
+      setAgentTurnState: ({ reply, action, provider, userMessage }) =>
+        set((state) => {
+          const nextHistory = userMessage && reply
+            ? [
+                ...state.agentChatHistory.slice(-10),
+                { role: "user" as const, content: userMessage },
+                { role: "assistant" as const, content: reply },
+              ]
+            : state.agentChatHistory;
+
+          return {
+            agentReply: reply,
+            agentLastAction:
+              action !== undefined ? action : state.agentLastAction,
+            agentLastProvider: provider || state.agentLastProvider,
+            agentChatHistory: nextHistory,
+          };
+        }),
+      clearAgentHistory: () =>
+        set({
+          agentReply: null,
+          agentChatHistory: [],
+          agentLastAction: null,
+        }),
+      addSavedAgendaEvent: (ev) =>
+        set((state) => ({
+          savedAgendaEvents: [ev, ...state.savedAgendaEvents].slice(0, 10),
+        })),
+      removeSavedAgendaEvent: (id) =>
+        set((state) => ({
+          savedAgendaEvents: state.savedAgendaEvents.filter((e) => e.id !== id),
+        })),
+
+      setDisposableBalance: (targetDisposable) =>
+        set((state) => {
+          const cleanTarget = Number(targetDisposable.toFixed(2));
+          const totalFixed = state.fixedExpenses.reduce(
+            (sum, f) => sum + f.amount,
+            0
+          );
+          const totalVariableSpent = state.envelopes.reduce(
+            (sum, e) => sum + e.spent,
+            0
+          );
+          const requiredIncome = Math.max(
+            0,
+            Number(
+              (
+                cleanTarget +
+                totalFixed +
+                state.savingsTarget +
+                totalVariableSpent
+              ).toFixed(2)
+            )
+          );
+
+          const todayYmd = new Date().toISOString().split("T")[0];
+          const existingSalaryTxIndex = state.transactions.findIndex(
+            (t) =>
+              t.type === "income" &&
+              /salary|salaire|income|ajustement solde/i.test(t.label)
+          );
+
+          let updatedTransactions = [...state.transactions];
+          if (existingSalaryTxIndex >= 0) {
+            updatedTransactions[existingSalaryTxIndex] = {
+              ...updatedTransactions[existingSalaryTxIndex],
+              label: `Solde ajusté par Kora (Reste à vivre : ${cleanTarget.toFixed(2)} €)`,
+              amount: requiredIncome,
+              date: todayYmd,
+            };
+          } else {
+            updatedTransactions = [
+              {
+                id: `tx-salary-${Date.now()}`,
+                label: `Solde ajusté par Kora (Reste à vivre : ${cleanTarget.toFixed(2)} €)`,
+                amount: requiredIncome,
+                date: todayYmd,
+                envelopeId: "income",
+                type: "income",
+              },
+              ...updatedTransactions,
+            ];
+          }
+
+          return {
+            monthlyIncome: requiredIncome,
+            transactions: updatedTransactions,
+          };
+        }),
 
       startNewMonth: (nextMonthLabel) =>
         set((state) => ({
@@ -703,6 +838,12 @@ export const useFinanceStore = create<FinanceStoreState>()(
         batchMeals: state.batchMeals,
         restoSkippedDates: state.restoSkippedDates,
         lastSyncedAt: state.lastSyncedAt,
+        agentPersona: state.agentPersona,
+        agentReply: state.agentReply,
+        agentChatHistory: state.agentChatHistory,
+        agentLastAction: state.agentLastAction,
+        agentLastProvider: state.agentLastProvider,
+        savedAgendaEvents: state.savedAgendaEvents,
       }),
     }
   )
